@@ -10,6 +10,11 @@ const webpackConfig = require("./webpack.config.base.cjs");
 
 const metadata = structuredClone(baseMetadata);
 
+// Initialize require array if it doesn't exist
+if (!metadata.require) {
+  metadata.require = [];
+}
+
 metadata.require.push(
   "file://" + path.resolve(__dirname, "../dist/index.debug.js")
 );
@@ -28,7 +33,7 @@ const cfg = merge(webpackConfig, {
     filename: "index.[name].js",
     path: path.resolve(__dirname, "../dist"),
   },
-  devtool: "eval-source-map",
+  devtool: "inline-source-map", // Changed from "eval-source-map" to work with CSP
   watch: true,
   watchOptions: {
     ignored: /node_modules/,

@@ -1,26 +1,17 @@
 const {
   author,
-  dependencies,
   repository,
   version,
 } = require("../package.json");
 
 module.exports = {
-  name: {
-    $: "webpack-userscript-template",
-    cn: "中文名",
-    en: "english name",
-  },
-  namespace: "https://trim21.me/",
+  name: "TOTAL TELEHACK DEATH",
+  namespace: "http://tampermonkey.net/",
   version: version,
-  author: author,
+  author: author.name,
+  description: "Something something quelque chose o algo",
   source: repository.url,
-  // 'license': 'MIT',
-  match: ["*://www.example.com/", "*://example.com/*"],
-  require: [
-    `https://cdn.jsdelivr.net/npm/jquery@${dependencies.jquery}/dist/jquery.min.js`,
-  ],
-  grant: ["GM.xmlHttpRequest"],
-  connect: ["httpbin.org"],
-  "run-at": "document-end",
+  match: ["https://telehack.com/*"],
+  grant: ["none"],
+  "run-at": "document-idle",
 };

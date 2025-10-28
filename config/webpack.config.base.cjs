@@ -21,7 +21,7 @@ const webpackConfig = {
   module: {
     rules: [
       {
-        test: /\.m?ts$/,
+        test: /\.m?[jt]s$/,
         use: {
           loader: "ts-loader",
         },

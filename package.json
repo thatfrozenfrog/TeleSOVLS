@@ -1,10 +1,10 @@
 {
-  "name": "webpack-userscript-template",
-  "description": "Build your UserScript with webpack",
-  "version": "0.0.1",
+  "name": "telehack-userscript",
+  "description": "Type a string into Telehack's xterm by simulating characters one-by-one",
+  "version": "2.0.0",
   "author": {
-    "name": "Trim21",
-    "email": "trim21me@gmail.com"
+    "name": "Telehack User",
+    "email": "user@example.com"
   },
   "scripts": {
     "format": "prettier -w ./",
@@ -16,13 +16,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/trim21/webpack-userscript-template"
+    "url": "https://github.com/yourusername/telehack-userscript"
   },
   "private": true,
-  "dependencies": {
-    "@trim21/gm-fetch": "^0.3.0",
-    "jquery": "^3.7.1"
-  },
+  "dependencies": {},
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json}": [
       "prettier --ignore-path ./.prettierignore --write "
@@ -30,7 +27,6 @@
   },
   "devDependencies": {
     "@types/greasemonkey": "^4.0.7",
-    "@types/jquery": "^3.5.33",
     "@types/node": "^22.17.0",
     "browserslist": "^4.25.1",
     "cross-env": "^7.0.3",
