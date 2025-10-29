@@ -1,10 +1,10 @@
 {
-  "name": "telehack-userscript",
-  "description": "Type a string into Telehack's xterm by simulating characters one-by-one",
+  "name": "telehack-sovls",
+  "description": "TTD",
   "version": "2.0.0",
   "author": {
-    "name": "Telehack User",
-    "email": "user@example.com"
+    "name": "thatfrozenfrog",
+    "email": ""
   },
   "scripts": {
     "format": "prettier -w ./",
@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/telehack-userscript"
+    "url": "https://github.com/thatfrozenfrog/TeleSOVLS"
   },
   "private": true,
   "dependencies": {},
