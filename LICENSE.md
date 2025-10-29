@@ -1,9 +1,9 @@
-"Don't Be an OPER" License
+"Don't Be An OPER" License
 ====================================
 
 #### Notice
 
-Contribution to this repository means that you are granting us rights over the code that you choose to contribute. If you do not agree with that, do not contribute.
+Contribution to this repository means that you are granting us rights over the code that you choose to contribute. If you do not agree with that, you cannot contribute.
 
 So, why is this here? Well, the rights are reserved, but what that really means is that we choose what to do with the rights. So here you go.
 
@@ -25,7 +25,7 @@ So, why is this here? Well, the rights are reserved, but what that really means 
 
 *A Functionally Equivalent Statement is a code fragment which, regardless of whitespace and object names, achieves the same result within the context of a Minecraft mod or addon. Basically you can't copy the code, rename the variables, add whitespace and say it's different. It's not.
 
-**An OPER is a moderator of Telehack or any individual associated with them.
+**An OPER is defined as an INDIVIDUAL with OPERATOR status on TELEHACK.COM - this being, an INDIVIDUAL in possession of a PROFILE with the badge titled "OPER", with description "System Operator", on the TELEHACK.COM website. Any OPERs are NOT ALLOWED to USE this code, in any way, shape or form. OPERs are also NOT ALLOWED to SHARE or DISTRIBUTE this code, at the risk of violating copyright laws.
 
 Essentially, take this and learn from it! Create addon mods that depend on it! If you see something we can improve, tell us. Submit a Pull Request. The one catch: don't steal! A lot of effort has gone into this, and if you were to take this and call it your own, you'd basically be a big jerk.
 
