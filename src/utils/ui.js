@@ -1,101 +1,103 @@
-/**
- * UI creation and management
- */
+import { applyTheme } from "./theme.js";
 
-import { press, type, SpecialKeys } from "./keyboard";
+export const THEMES = {
+  Casual: {
+    fontName: "'Arial Mono', monospace",
+    fg: "#282a36",
+    bg: "#f5f5f5",
+    cursorColor: "#1a73e8",
+  },
+  Classic: {
+    fontName: "'Wumpus Mono', monospace",
+    fg: "#00ff00",
+    bg: "#000000",
+    cursorColor: "#00ff00",
+  },
+  Matrix: {
+    fontName: "'JetBrains Mono', monospace",
+    fg: "#00ff00",
+    bg: "#0d0208",
+    cursorColor: "#39ff14",
+  },
+  Dracula: {
+    fontName: "'Fira Code', 'Courier New', monospace",
+    fg: "#f8f8f2",
+    bg: "#282a36",
+    cursorColor: "#ff79c6",
+  },
+  Monokai: {
+    fontName: "'Consolas', 'Courier New', monospace",
+    fg: "#f8f8f2",
+    bg: "#272822",
+    cursorColor: "#f92672",
+  },
+  Solarized: {
+    fontName: "'Monaco', 'Courier New', monospace",
+    fg: "#839496",
+    bg: "#002b36",
+    cursorColor: "#268bd2",
+  },
+};
+
+export function changeTheme(themeName) {
+  const theme = THEMES[themeName];
+  if (theme) {
+    applyTheme(theme.fontName, theme.fg, theme.bg, theme.cursorColor);
+    // Save preference to localStorage
+    try {
+      localStorage.setItem("th-selected-theme", themeName);
+    } catch (err) {
+      // ignore if localStorage is not available
+    }
+  }
+}
 
 export function createUI() {
-  if (document.getElementById("th-type-ui")) return;
+  if (document.getElementById("th-theme-selector")) return;
 
   const box = document.createElement("div");
-  box.id = "th-type-ui";
+  box.id = "th-theme-selector";
   Object.assign(box.style, {
     position: "fixed",
     right: "10px",
     bottom: "10px",
     zIndex: "2147483647",
-    background: "#000",
-    color: "#0f0",
-    border: "1px solid #0f0",
-    padding: "8px",
-    fontFamily: "monospace",
-    borderRadius: "6px",
-    fontSize: "13px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    boxShadow: "0 0 8px rgba(0,255,0,0.06)",
+    background: "rgba(255, 255, 255, 0.95)",
+    border: "1px solid #dadce0",
+    padding: "12px",
+    fontFamily: "'Segoe UI', Arial, sans-serif",
+    borderRadius: "8px",
+    fontSize: "14px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    minWidth: "200px",
   });
 
   box.innerHTML = `
-    <div style="display:flex;gap:6px;align-items:center;">
-      <input id="th-type-input" placeholder="text to type" style="min-width:220px;padding:4px;background:#001000;border:1px solid #003000;color:#0f0;border-radius:4px;font-family:monospace">
-      <label style="font-size:11px">ms/char:<input id="th-type-speed" type="number" value="60" min="0" style="width:64px;margin-left:6px;background:#001000;border:1px solid #003000;color:#0f0;border-radius:4px;padding:3px;text-align:center"></label>
-      <button id="th-type-start">Type</button>
-      <button id="th-type-enter" title="Add Enter after typing">Type + Enter</button>
-      <button id="th-type-close" title="Close" style="padding:2px 6px">✕</button>
-    </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;padding-top:4px;border-top:1px solid #003000;">
-      <button id="th-arrow-up" title="Arrow Up" style="padding:2px 8px">↑</button>
-      <button id="th-arrow-down" title="Arrow Down" style="padding:2px 8px">↓</button>
-      <button id="th-arrow-left" title="Arrow Left" style="padding:2px 8px">←</button>
-      <button id="th-arrow-right" title="Arrow Right" style="padding:2px 8px">→</button>
-      <button id="th-backspace" title="Backspace" style="padding:2px 8px">⌫</button>
-      <span style="border-left:1px solid #003000;margin:0 4px;"></span>
-      <button id="th-ctrl-d" title="Ctrl+D (EOF)" style="padding:2px 8px">^D</button>
-      <button id="th-ctrl-c" title="Ctrl+C (Break)" style="padding:2px 8px">^C</button>
-      <button id="th-ctrl-t" title="Ctrl+T" style="padding:2px 8px">^T</button>
-      <button id="th-ctrl-r" title="Ctrl+R (Reverse search)" style="padding:2px 8px">^R</button>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label style="font-weight:500;color:#202124;font-size:13px;">Select Theme:</label>
+      <select id="th-theme-dropdown" style="padding:8px;border:1px solid #dadce0;border-radius:4px;background:#fff;color:#202124;font-family:inherit;font-size:13px;cursor:pointer;">
+        ${Object.keys(THEMES)
+          .map((name) => `<option value="${name}">${name}</option>`)
+          .join("")}
+      </select>
     </div>
   `;
   document.body.appendChild(box);
 
-  // Type buttons
-  box.querySelector("#th-type-start").addEventListener("click", () => {
-    const s = box.querySelector("#th-type-input").value || "";
-    const ms = Number(box.querySelector("#th-type-speed").value) || 0;
-    type(s, ms);
+  const dropdown = box.querySelector("#th-theme-dropdown");
+
+  // Apply theme on change
+  dropdown.addEventListener("change", (e) => {
+    changeTheme(e.target.value);
   });
 
-  box.querySelector("#th-type-enter").addEventListener("click", async () => {
-    const s = box.querySelector("#th-type-input").value || "";
-    const ms = Number(box.querySelector("#th-type-speed").value) || 0;
-    await type(s, ms);
-    press("enter");
-  });
-
-  box
-    .querySelector("#th-type-close")
-    .addEventListener("click", () => box.remove());
-
-  // Arrow keys
-  box
-    .querySelector("#th-arrow-up")
-    .addEventListener("click", () => press("up"));
-  box
-    .querySelector("#th-arrow-down")
-    .addEventListener("click", () => press("down"));
-  box
-    .querySelector("#th-arrow-left")
-    .addEventListener("click", () => press("left"));
-  box
-    .querySelector("#th-arrow-right")
-    .addEventListener("click", () => press("right"));
-  box
-    .querySelector("#th-backspace")
-    .addEventListener("click", () => press("backspace"));
-
-  // Control keys
-  box
-    .querySelector("#th-ctrl-d")
-    .addEventListener("click", () => press("d", { ctrl: true }));
-  box
-    .querySelector("#th-ctrl-c")
-    .addEventListener("click", () => press("c", { ctrl: true }));
-  box
-    .querySelector("#th-ctrl-t")
-    .addEventListener("click", () => press("t", { ctrl: true }));
-  box
-    .querySelector("#th-ctrl-r")
-    .addEventListener("click", () => press("r", { ctrl: true }));
+  // Load saved theme preference
+  try {
+    const savedTheme = localStorage.getItem("th-selected-theme");
+    if (savedTheme && THEMES[savedTheme]) {
+      dropdown.value = savedTheme;
+    }
+  } catch (err) {
+    // ignore if localStorage is not available
+  }
 }
