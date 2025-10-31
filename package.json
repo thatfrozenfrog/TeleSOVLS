@@ -19,7 +19,6 @@
     "url": "https://github.com/thatfrozenfrog/TeleSOVLS"
   },
   "private": true,
-  "dependencies": {},
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json}": [
       "prettier --ignore-path ./.prettierignore --write "
