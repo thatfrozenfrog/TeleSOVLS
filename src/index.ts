@@ -1,10 +1,8 @@
 /**
  * Main entry point for Telehack userscript
  */
-
-import { changeTheme, createUI } from "./utils/ui";
-import { applyTheme } from "./utils/theme.js";
-import { press, type, SpecialKeys } from "./utils/keyboard";
+import { hook } from "./utils/hook";
+import { applyTheme, changeTheme, initThemeTool } from "./utils/theme.js";
 import {
   getViewportContent,
   getViewportLines,
@@ -12,23 +10,20 @@ import {
   getCursorPosition,
   getAbsoluteCursorPosition,
 } from "./utils/terminal";
-import { create } from "domain";
-
 declare global {
   interface Window {
     i?: any;
+    n?: any;
     term?: any;
-    terminal?: any;
-    // API functions
-    press: typeof press;
-    type: typeof type;
-    SpecialKeys: typeof SpecialKeys;
+    socket?: any;
+    __capturedSockets?: any[];
     getViewportContent: typeof getViewportContent;
     getViewportLines: typeof getViewportLines;
     getCurrentLine: typeof getCurrentLine;
     getCursorPosition: typeof getCursorPosition;
     getAbsoluteCursorPosition: typeof getAbsoluteCursorPosition;
     applyTheme: typeof applyTheme;
+    testsend: typeof testsend;
   }
 }
 
@@ -41,29 +36,44 @@ function loadFonts() {
   document.head.appendChild(link);
 }
 
+function testsend() {
+  console.log("tests send");
+  const ws = window.socket;
+  ws.send("primes\n");
+}
+
 (function () {
   "use strict";
-
+  hook();
   function waitReady() {
     loadFonts();
-    if (document.querySelector(".xterm-helper-textarea") || window.i) {
-      //      applyTheme();
-      createUI();
-      changeTheme("Casual");
+
+    if (window.i != undefined) {
+      window.term = window.i;
+      initThemeTool();
+      try {
+        const savedTheme = localStorage.getItem("th-selected-theme");
+        if (savedTheme && typeof savedTheme === "string") {
+          changeTheme(savedTheme);
+        } else {
+          changeTheme("Casual");
+        }
+      } catch (_) {
+        changeTheme("Casual");
+      }
     } else {
-      setTimeout(waitReady, 250);
+      setTimeout(waitReady, 2500);
     }
   }
 
   waitReady();
 
-  window.press = press;
-  window.type = type;
-  window.SpecialKeys = SpecialKeys;
   window.getViewportContent = getViewportContent;
   window.getViewportLines = getViewportLines;
   window.getCurrentLine = getCurrentLine;
   window.getCursorPosition = getCursorPosition;
   window.getAbsoluteCursorPosition = getAbsoluteCursorPosition;
   window.applyTheme = applyTheme;
+
+  window.testsend = testsend;
 })();
