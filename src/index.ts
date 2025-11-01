@@ -10,6 +10,9 @@ import {
   getCursorPosition,
   getAbsoluteCursorPosition,
 } from "./utils/terminal";
+
+import { solveAutovon } from "./modules/autovon";
+
 declare global {
   interface Window {
     i?: any;
@@ -24,6 +27,7 @@ declare global {
     getAbsoluteCursorPosition: typeof getAbsoluteCursorPosition;
     applyTheme: typeof applyTheme;
     testsend: typeof testsend;
+    solveAutovon: typeof solveAutovon;
   }
 }
 
@@ -75,5 +79,7 @@ function testsend() {
   window.getAbsoluteCursorPosition = getAbsoluteCursorPosition;
   window.applyTheme = applyTheme;
 
+  //test only, remove later
   window.testsend = testsend;
+  window.solveAutovon = solveAutovon;
 })();
