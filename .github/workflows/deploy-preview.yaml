@@ -6,7 +6,7 @@ name: deploy-preview
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   deploy:
