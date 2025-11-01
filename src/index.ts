@@ -10,6 +10,8 @@ import {
   getCursorPosition,
   getAbsoluteCursorPosition,
 } from "./utils/terminal";
+
+import { sendkey } from "./utils/keyboard";
 declare global {
   interface Window {
     i?: any;
@@ -22,6 +24,7 @@ declare global {
     getCurrentLine: typeof getCurrentLine;
     getCursorPosition: typeof getCursorPosition;
     getAbsoluteCursorPosition: typeof getAbsoluteCursorPosition;
+    sendkey: typeof sendkey;
     applyTheme: typeof applyTheme;
     testsend: typeof testsend;
   }
@@ -43,8 +46,8 @@ function testsend() {
 }
 
 (function () {
-  "use strict";
   hook();
+
   function waitReady() {
     loadFonts();
 
@@ -74,6 +77,6 @@ function testsend() {
   window.getCursorPosition = getCursorPosition;
   window.getAbsoluteCursorPosition = getAbsoluteCursorPosition;
   window.applyTheme = applyTheme;
-
+  window.sendkey = sendkey;
   window.testsend = testsend;
 })();

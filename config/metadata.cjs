@@ -13,5 +13,6 @@ module.exports = {
   source: repository.url,
   match: ["https://telehack.com/*"],
   grant: ["none"],
-  "run-at": "document-idle",
+  "run-at": "document-start",
+  "inject-into": "page",
 };
