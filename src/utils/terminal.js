@@ -30,7 +30,9 @@ export function getViewportLines() {
 export function getLastLines(n) {
   const lines = getViewportLines();
   if (n <= 0) return [];
-  return lines.slice(-n);
+  const ypos = getCursorPosition().y;
+  const start = Math.max(0, ypos - n + 1);
+  return lines.slice(start, ypos + 1);
 }
 
 /**
