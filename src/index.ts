@@ -11,7 +11,8 @@ import {
   getAbsoluteCursorPosition,
 } from "./utils/terminal";
 
-import { sendkey } from "./utils/keyboard";
+import { solveAutovon } from "./modules/autovon";
+
 declare global {
   interface Window {
     i?: any;
@@ -27,6 +28,7 @@ declare global {
     sendkey: typeof sendkey;
     applyTheme: typeof applyTheme;
     testsend: typeof testsend;
+    solveAutovon: typeof solveAutovon;
   }
 }
 
@@ -77,6 +79,8 @@ function testsend() {
   window.getCursorPosition = getCursorPosition;
   window.getAbsoluteCursorPosition = getAbsoluteCursorPosition;
   window.applyTheme = applyTheme;
-  window.sendkey = sendkey;
+
+  //test only, remove later
   window.testsend = testsend;
+  window.solveAutovon = solveAutovon;
 })();
