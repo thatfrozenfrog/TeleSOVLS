@@ -1,5 +1,13 @@
 import { registerTool } from "./ui.js";
 
+// Internal helper to broadcast theme lifecycle events
+function dispatchThemeEvent(type, detail) {
+  try {
+    const ev = new CustomEvent(type, { detail });
+    window.dispatchEvent(ev);
+  } catch (_) {}
+}
+
 // Theme definitions
 export const THEMES = {
   Casual: {
@@ -97,6 +105,16 @@ export function applyTheme(
     selectionForeground || "#000",
   );
   scheduleRefit();
+
+  // Notify listeners that terminal theme/colors were applied
+  dispatchThemeEvent("th:theme-updated", {
+    fontName,
+    fg,
+    bg,
+    cursorColor,
+    selectionBackground,
+    selectionForeground,
+  });
 }
 
 export default applyTheme;
@@ -107,6 +125,8 @@ export default applyTheme;
 export function changeTheme(themeName) {
   const theme = THEMES[themeName];
   if (theme) {
+    // Inform listeners we're about to apply a theme
+    dispatchThemeEvent("th:theme-applying", { name: themeName, theme });
     applyTheme(
       theme.fontName,
       theme.fg,
@@ -119,6 +139,9 @@ export function changeTheme(themeName) {
     try {
       localStorage.setItem("th-selected-theme", themeName);
     } catch (err) {}
+
+    // Inform listeners the theme application finished
+    dispatchThemeEvent("th:theme-applied", { name: themeName, theme });
   }
 }
 
@@ -194,6 +217,43 @@ function scheduleRefit() {
     setTimeout(fire, 50);
     setTimeout(fire, 200);
   }
+}
+
+// Convenience listeners/promises for consumers
+export function onThemeApplying(listener) {
+  try {
+    window.addEventListener("th:theme-applying", listener);
+  } catch (_) {}
+}
+export function onThemeApplied(listener) {
+  try {
+    window.addEventListener("th:theme-applied", listener);
+  } catch (_) {}
+}
+export function waitForThemeApplied(timeout = 8000) {
+  return new Promise((resolve, reject) => {
+    let timer;
+    const handler = (ev) => {
+      try {
+        window.removeEventListener("th:theme-applied", handler);
+      } catch (_) {}
+      if (timer) clearTimeout(timer);
+      resolve(ev && ev.detail ? ev.detail : undefined);
+    };
+    try {
+      window.addEventListener("th:theme-applied", handler, { once: true });
+    } catch (_) {
+      window.addEventListener("th:theme-applied", handler);
+    }
+    if (timeout) {
+      timer = setTimeout(() => {
+        try {
+          window.removeEventListener("th:theme-applied", handler);
+        } catch (_) {}
+        reject(new Error("theme apply timeout"));
+      }, timeout);
+    }
+  });
 }
 
 // Force ::selection colors for DOM renderer to ensure visible highlight

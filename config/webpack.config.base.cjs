@@ -13,6 +13,8 @@ const webpackConfig = {
   entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "../dist"),
+    // Clean the output directory before emit (Webpack 5+)
+    clean: true,
   },
   target: "web",
   externals: {

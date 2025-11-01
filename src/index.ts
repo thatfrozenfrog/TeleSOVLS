@@ -25,6 +25,7 @@ declare global {
     getCurrentLine: typeof getCurrentLine;
     getCursorPosition: typeof getCursorPosition;
     getAbsoluteCursorPosition: typeof getAbsoluteCursorPosition;
+    sendkey: typeof sendkey;
     applyTheme: typeof applyTheme;
     testsend: typeof testsend;
     solveAutovon: typeof solveAutovon;
@@ -47,8 +48,8 @@ function testsend() {
 }
 
 (function () {
-  "use strict";
   hook();
+
   function waitReady() {
     loadFonts();
 
