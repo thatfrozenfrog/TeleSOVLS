@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name          TOTAL TELEHACK DEATH
+// @name          TeleSOVLS
 // @namespace     http://tampermonkey.net/
-// @version       2.0.0
+// @version       1.1.0
 // @author        thatfrozenfrog
-// @description   Something something quelque chose o algo
+// @description   TRVE T3L3SOVLS 3XP3RI3NC3
 // @source        https://github.com/thatfrozenfrog/TeleSOVLS
 // @match         https://telehack.com/*
 // @grant         none
@@ -23107,6 +23107,17 @@ const code = () => {
 };
 window.addEventListener("th:theme-applied", () => {
     console.log("Theme applied (from hook)");
+    if (socket === undefined) {
+        alert("WebSocket not captured!");
+        try {
+            window.location.reload(true);
+        }
+        catch (_) {
+            const url = new URL(window.location.href);
+            url.searchParams.set("_cb", Date.now().toString());
+            window.location.replace(url.toString());
+        }
+    }
 });
 
 ;// ./src/utils/ui.js
@@ -23274,7 +23285,6 @@ function createUI() {
 
 ;// ./src/utils/theme.js
 
-// Internal helper to broadcast theme lifecycle events
 function dispatchThemeEvent(type, detail) {
     try {
         const ev = new CustomEvent(type, { detail });
@@ -23282,7 +23292,7 @@ function dispatchThemeEvent(type, detail) {
     }
     catch (_) { }
 }
-// Theme definitions
+// Theme consts
 const THEMES = {
     Casual: {
         fontName: "'Arial Mono', monospace",
@@ -23300,37 +23310,126 @@ const THEMES = {
         selectionBackground: "#003300",
         selectionForeground: "#00ff00",
     },
-    Matrix: {
-        fontName: "'JetBrains Mono', monospace",
-        fg: "#00ff00",
-        bg: "#0d0208",
-        cursorColor: "#39ff14",
-        selectionBackground: "#003300",
-        selectionForeground: "#00ff00",
+    Monokai: {
+        fontName: "'Fira Code', monospace",
+        fg: "#F8F8F2",
+        bg: "#272822",
+        cursorColor: "#F8F8F0",
+        selectionBackground: "#49483E",
+        selectionForeground: "#F8F8F2",
+    },
+    SolarizedDark: {
+        fontName: "'Source Code Pro', monospace",
+        fg: "#839496",
+        bg: "#002B36",
+        cursorColor: "#93A1A1",
+        selectionBackground: "#073642",
+        selectionForeground: "#93A1A1",
+    },
+    SolarizedLight: {
+        fontName: "'Source Code Pro', monospace",
+        fg: "#657B83",
+        bg: "#FDF6E3",
+        cursorColor: "#586E75",
+        selectionBackground: "#EEE8D5",
+        selectionForeground: "#586E75",
     },
     Dracula: {
-        fontName: "'Fira Code', 'Courier New', monospace",
-        fg: "#f8f8f2",
-        bg: "#282a36",
-        cursorColor: "#ff79c6",
-        selectionBackground: "#44475a",
-        selectionForeground: "#f8f8f2",
+        fontName: "'JetBrains Mono', monospace",
+        fg: "#F8F8F2",
+        bg: "#282A36",
+        cursorColor: "#FF79C6",
+        selectionBackground: "#44475A",
+        selectionForeground: "#F8F8F2",
     },
-    Monokai: {
-        fontName: "'Consolas', 'Courier New', monospace",
-        fg: "#f8f8f2",
-        bg: "#272822",
-        cursorColor: "#f92672",
-        selectionBackground: "#49483e",
-        selectionForeground: "#f8f8f2",
+    OneDark: {
+        fontName: "'Fira Code', monospace",
+        fg: "#ABB2BF",
+        bg: "#282C34",
+        cursorColor: "#528BFF",
+        selectionBackground: "#3E4451",
+        selectionForeground: "#ABB2BF",
     },
-    Solarized: {
-        fontName: "'Monaco', 'Courier New', monospace",
-        fg: "#839496",
-        bg: "#002b36",
-        cursorColor: "#268bd2",
-        selectionBackground: "#073642",
-        selectionForeground: "#93a1a1",
+    GruvboxDark: {
+        fontName: "'Iosevka', monospace",
+        fg: "#EBDBB2",
+        bg: "#282828",
+        cursorColor: "#FBF1C7",
+        selectionBackground: "#504945",
+        selectionForeground: "#EBDBB2",
+    },
+    Nord: {
+        fontName: "'Cascadia Code', monospace",
+        fg: "#D8DEE9",
+        bg: "#2E3440",
+        cursorColor: "#88C0D0",
+        selectionBackground: "#434C5E",
+        selectionForeground: "#E5E9F0",
+    },
+    TomorrowNight: {
+        fontName: "'Roboto Mono', monospace",
+        fg: "#C5C8C6",
+        bg: "#1D1F21",
+        cursorColor: "#AEAFAD",
+        selectionBackground: "#373B41",
+        selectionForeground: "#C5C8C6",
+    },
+    AyuMirage: {
+        fontName: "'IBM Plex Mono', monospace",
+        fg: "#CBCCC6",
+        bg: "#1F2430",
+        cursorColor: "#FFCC66",
+        selectionBackground: "#34394A",
+        selectionForeground: "#CBCCC6",
+    },
+    TokyoNight: {
+        fontName: "'JetBrains Mono', monospace",
+        fg: "#C0CAF5",
+        bg: "#1A1B26",
+        cursorColor: "#A9B1D6",
+        selectionBackground: "#33467C",
+        selectionForeground: "#C0CAF5",
+    },
+    // --- Light themes below ---
+    GitHubLight: {
+        fontName: "'Consolas', monospace",
+        fg: "#24292E",
+        bg: "#FFFFFF",
+        cursorColor: "#0969DA",
+        selectionBackground: "#BBDFFF",
+        selectionForeground: "#000000",
+    },
+    OneLight: {
+        fontName: "'Fira Code', monospace",
+        fg: "#383A42",
+        bg: "#FAFAFA",
+        cursorColor: "#526FFF",
+        selectionBackground: "#E5E9FF",
+        selectionForeground: "#383A42",
+    },
+    VSCodeLight: {
+        fontName: "'Cascadia Code', monospace",
+        fg: "#1E1E1E",
+        bg: "#FFFFFF",
+        cursorColor: "#000000",
+        selectionBackground: "#ADD6FF",
+        selectionForeground: "#000000",
+    },
+    GruvboxLight: {
+        fontName: "'Iosevka', monospace",
+        fg: "#3C3836",
+        bg: "#FBF1C7",
+        cursorColor: "#7C6F64",
+        selectionBackground: "#D5C4A1",
+        selectionForeground: "#3C3836",
+    },
+    SolarizedSoftLight: {
+        fontName: "'Source Code Pro', monospace",
+        fg: "#586E75",
+        bg: "#FDF6E3",
+        cursorColor: "#657B83",
+        selectionBackground: "#EEE8D5",
+        selectionForeground: "#586E75",
     },
 };
 function applyTheme(fontName = "'Courier New', Courier, monospace", fg = "#202124", bg = "#f5f5f5", cursorColor = "#1a73e8", selectionBackground, selectionForeground) {
