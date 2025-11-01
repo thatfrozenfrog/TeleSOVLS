@@ -15,4 +15,5 @@ module.exports = {
   grant: ["none"],
   "run-at": "document-start",
   "inject-into": "page",
+
 };

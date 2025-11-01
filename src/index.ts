@@ -9,10 +9,12 @@ import {
   getCurrentLine,
   getCursorPosition,
   getAbsoluteCursorPosition,
+  getLastLines,
 } from "./utils/terminal";
-
+import { solveBoard } from "./modules/2048";
 import { solveAutovon } from "./modules/autovon";
-
+import { sendkey } from "./utils/keyboard";
+import { parseboard, autosolve } from "./utils/auto/auto2048";
 declare global {
   interface Window {
     i?: any;
@@ -25,10 +27,15 @@ declare global {
     getCurrentLine: typeof getCurrentLine;
     getCursorPosition: typeof getCursorPosition;
     getAbsoluteCursorPosition: typeof getAbsoluteCursorPosition;
+
+    getLastLines: typeof getLastLines;
     sendkey: typeof sendkey;
     applyTheme: typeof applyTheme;
     testsend: typeof testsend;
     solveAutovon: typeof solveAutovon;
+    solveBoard: typeof solveBoard;
+    parseboard: typeof parseboard;
+    autosolve: typeof solveBoard;
   }
 }
 
@@ -79,8 +86,12 @@ function testsend() {
   window.getCursorPosition = getCursorPosition;
   window.getAbsoluteCursorPosition = getAbsoluteCursorPosition;
   window.applyTheme = applyTheme;
-
+  window.sendkey = sendkey;
+  window.getLastLines = getLastLines;
   //test only, remove later
   window.testsend = testsend;
   window.solveAutovon = solveAutovon;
+  window.solveBoard = solveBoard;
+  window.parseboard = parseboard;
+  window.autosolve = autosolve;
 })();
