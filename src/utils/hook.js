@@ -31,16 +31,15 @@ const code = () => {
   } catch (_) {}
 };
 
+function hardRefresh() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("refresh", Date.now());
+  window.location.href = url.toString();
+}
+
 window.addEventListener("th:theme-applied", () => {
   console.log("Theme applied (from hook)");
-  if (socket === undefined) {
-    alert("WebSocket not captured!");
-    try {
-      window.location.reload(true);
-    } catch (_) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("_cb", Date.now().toString());
-      window.location.replace(url.toString());
-    }
+  if (window.socket === undefined) {
+    alert("WebSocket not captured! Press Ctrl + F5 to hard refresh.");
   }
 });
