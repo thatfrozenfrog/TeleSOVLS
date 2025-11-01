@@ -5,11 +5,11 @@ const {
 } = require("../package.json");
 
 module.exports = {
-  name: "TOTAL TELEHACK DEATH",
+  name: "TeleSOVLS",
   namespace: "http://tampermonkey.net/",
   version: version,
   author: author.name,
-  description: "Something something quelque chose o algo",
+  description: "TRVE T3L3SOVLS 3XP3RI3NC3",
   source: repository.url,
   match: ["https://telehack.com/*"],
   grant: ["none"],

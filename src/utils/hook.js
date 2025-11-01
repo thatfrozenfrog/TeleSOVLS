@@ -33,4 +33,14 @@ const code = () => {
 
 window.addEventListener("th:theme-applied", () => {
   console.log("Theme applied (from hook)");
+  if (socket === undefined) {
+    alert("WebSocket not captured!");
+    try {
+      window.location.reload(true);
+    } catch (_) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("_cb", Date.now().toString());
+      window.location.replace(url.toString());
+    }
+  }
 });
