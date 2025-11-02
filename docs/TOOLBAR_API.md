@@ -2,134 +2,95 @@
 
 ## Overview
 
-The TeleSOVLS toolbar provides an extensible system for adding tools and features via a hamburger menu interface. The toolbar appears in the bottom-right corner with a glowing green hamburger button.
+The TeleSOVLS toolbar surfaces utilities inside a compact hamburger menu anchored to the bottom‑right corner of the page. The UI renders inside a shadow root with a custom neon cyberpunk theme—black glass surfaces, radiant green outlines, and a glowing rounded-square toggle button—so the host site’s styles remain untouched.
 
 ## Architecture
 
-- **`src/utils/ui.js`** - Core toolbar infrastructure (hamburger button, panel management)
-- **`src/utils/theme.js`** - Theme management and theme selector tool implementation
+- `src/utils/ui.js` – toolbar infrastructure (hamburger button, panel management, registration API)
+- `src/utils/theme.js` – example tool that exposes the theme selector
 
 ## Adding New Tools
 
-To add a new tool to the toolbar, use the `registerTool` function:
+You can register a tool with either a shorthand signature or an options object.
 
 ```javascript
 import { registerTool } from "./utils/ui.js";
 
-// Create your tool's content
-const myToolContent = document.createElement("div");
-myToolContent.innerHTML = `
-  <label>My Tool</label>
-  <button id="my-button">Click Me</button>
-`;
+// Shorthand signature: registerTool(id, content, onInit?)
+registerTool("my-tool", "<h3>Tool</h3><p>Hello!</p>", (panel) => {
+  console.log("panel mounted", panel);
+});
 
-// Register the tool
+// Options object: registerTool({ id, content, onInit })
 registerTool({
-  id: "my-unique-tool-id",           // Unique identifier for the tool
-  content: myToolContent,             // HTMLElement or HTML string
-  onInit: (panel) => {                // Optional callback after panel is added
-    const button = panel.querySelector("#my-button");
-    button.addEventListener("click", () => {
+  id: "my-tool",
+  content: () => {
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <h3>My Tool</h3>
+      <button id="my-button" class="contrast">Click Me</button>
+    `;
+    return el;
+  },
+  onInit: (panel) => {
+    panel.querySelector("#my-button")?.addEventListener("click", () => {
       console.log("Button clicked!");
     });
-  }
+  },
 });
 ```
+
+`content` may be:
+
+- An `HTMLElement`
+- A string containing HTML
+- A factory function that returns an `HTMLElement`
+
+The optional `onInit(panel)` callback runs after the panel has been inserted into the toolbar.
 
 ## API Reference
 
+### `registerTool(id, content, onInit?)`
 ### `registerTool(options)`
 
-Register a new tool with the toolbar.
+Registers a new panel inside the toolbar.
 
-**Parameters:**
-- `options.id` (string, required) - Unique identifier for the tool panel
-- `options.content` (HTMLElement|string, required) - Content to display (DOM element or HTML string)
-- `options.onInit` (Function, optional) - Callback invoked after the panel is added to the DOM. Receives the panel element as an argument.
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string` | ✓ | Unique identifier for the panel. Re‑registering the same id returns the existing panel. |
+| `content` | `HTMLElement \| string \| () => HTMLElement` | ✓ | Panel body. Factory functions are invoked immediately. |
+| `onInit` | `(panel: HTMLElement) => void` | ✕ | Hook invoked after the panel is added to the DOM. |
 
-**Returns:** HTMLElement - The created panel element
-
-**Example:**
-```javascript
-const panel = registerTool({
-  id: "my-tool",
-  content: "<h3>My Tool</h3><p>Tool content here</p>",
-  onInit: (panel) => {
-    // Initialize event listeners, load saved state, etc.
-  }
-});
-```
+**Returns:** the created panel `HTMLElement` (or the existing one if the id was already registered).
 
 ### `createUI()`
 
-Legacy function for backward compatibility. Initializes the toolbar infrastructure. This is now called automatically when the first tool is registered, so you typically don't need to call it explicitly.
+Legacy helper that forcibly initializes the toolbar. The toolbar now self‑initializes on the first `registerTool` call, so this is rarely necessary.
 
-## Example: Theme Selector Tool
+## Styling & Layout
 
-The theme selector is implemented in `src/utils/theme.js` using the toolbar API:
+- Panels render as glossy, neon-accented cards with rounded corners, green outlines, and a subtle entrance animation.
+- Typography inherits the JetBrains Mono / Fira Code stack inside the shadow root for a futuristic terminal vibe.
+- Panels align to the left of the hamburger button; opening the toolbar reveals every registered panel simultaneously.
+- Because everything lives inside a shadow root, your tool markup can safely define its own classes or inline styles without colliding with the host page.
 
-```javascript
-import { registerTool } from "./utils/ui.js";
-
-export function initThemeTool() {
-  const content = document.createElement("div");
-  // ... create dropdown and label ...
-
-  registerTool({
-    id: "th-theme-selector",
-    content: content,
-    onInit: (panel) => {
-      const dropdown = panel.querySelector("#th-theme-dropdown");
-      dropdown.addEventListener("change", (e) => {
-        changeTheme(e.target.value);
-      });
-      // Load saved theme from localStorage
-    }
-  });
-}
-```
-
-## Styling
-
-Tools inherit base styles from the `.th-tool-panel` class:
-- White background with slight transparency
-- Rounded corners
-- Drop shadow
-- Positioned bottom-right, aligned with hamburger button
-
-To customize a specific tool's appearance, target its unique ID:
-
-```css
-#my-unique-tool-id {
-  min-width: 300px;
-  background: rgba(0, 0, 0, 0.9);
-  color: #00ff00;
-}
-```
+If you need bespoke styling, attach classes/inline styles to your content element. You can also append a `<style>` tag inside your tool content for scoped overrides.
 
 ## Toolbar Behavior
 
-- **Open/Close**: Click the hamburger button to toggle all tool panels
-- **Outside Click**: Clicking outside the toolbar closes all panels
-- **Escape Key**: Press Escape to close the toolbar
-- **Panel Positioning**: Panels appear to the left of the hamburger button
-- **Multiple Tools**: All registered tools appear simultaneously when the toolbar opens
+- **Open / Close:** clicking the hamburger toggles all panels.
+- **Outside click:** clicking outside the toolbar closes it.
+- **Keyboard:** pressing `Esc` closes the toolbar.
+- **Multiple tools:** every registered tool is shown together when the toolbar opens.
 
 ## Best Practices
 
-1. **Unique IDs**: Always use unique, descriptive IDs for your tools
-2. **Event Cleanup**: If your tool needs cleanup, track registered listeners
-3. **State Persistence**: Use localStorage for saving user preferences
-4. **Error Handling**: Wrap localStorage access in try-catch blocks
-5. **Initialization Order**: Register tools after DOM is ready
-6. **Content Structure**: Use semantic HTML and proper labels for accessibility
+1. Use descriptive, unique ids (prefix with `th-` to stay consistent).
+2. Keep tool layouts simple—small forms or status blocks work best.
+3. Clean up external event listeners or timers created by your tool.
+4. Persist user preferences with `localStorage` (wrap access in `try/catch`).
+5. Prefer semantic HTML—labels for inputs, headings for section titles, etc.
 
-## Future Enhancements
+## Example: Theme Selector Tool
 
-Potential improvements to consider:
-- Individual panel toggle (show/hide specific tools independently)
-- Panel reordering/drag-and-drop
-- Tool categories/groups
-- Keyboard shortcuts for specific tools
-- Animation/transition effects
-- Responsive positioning for small viewports
+See `src/utils/theme.js` for a complete example. It registers a dropdown panel, loads the saved theme from `localStorage` during `onInit`, and reacts to dropdown changes to apply themes in real time.

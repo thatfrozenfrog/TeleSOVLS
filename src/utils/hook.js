@@ -4,7 +4,37 @@ export function hook() {
   s.async = false;
   s.defer = false;
   document.documentElement.appendChild(s);
+
   s.remove();
+
+  // After injecting the hook into the page, give it a short window to install the
+  // WebSocket capture getter. If no socket is available after the timeout, prompt
+  // the user to hard-refresh so the hook can run earlier in the page lifecycle.
+  (function checkSocket(timeoutMs = 3000, pollMs = 100) {
+    const start = Date.now();
+    const tick = () => {
+      try {
+        if (window.socket) return;
+      } catch (_) {}
+
+      if (Date.now() - start >= timeoutMs) {
+        const ok = confirm(
+          "WebSocket was not captured. Hard-refresh the page now (reload without cache)?",
+        );
+        if (ok) {
+          hardRefresh();
+        } else {
+          alert(
+            "If the socket is not captured, try a hard refresh (Ctrl+Shift+R) or reload the page.",
+          );
+        }
+        return;
+      }
+
+      setTimeout(tick, pollMs);
+    };
+    tick();
+  })();
 }
 
 const code = () => {
@@ -28,7 +58,9 @@ const code = () => {
       },
       configurable: true,
     });
-  } catch (_) {}
+  } catch (_) {
+    alert("WebSocket failed to hook. Press Ctrl + Shift + R to hard refresh.");
+  }
 };
 
 function hardRefresh() {
@@ -39,7 +71,4 @@ function hardRefresh() {
 
 window.addEventListener("th:theme-applied", () => {
   console.log("Theme applied (from hook)");
-  if (window.socket === undefined) {
-    alert("WebSocket not captured! Press Ctrl + F5 to hard refresh.");
-  }
 });

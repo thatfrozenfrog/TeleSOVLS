@@ -1,6 +1,49 @@
 import * as terminal from "../terminal.js";
 import * as keyboard from "../keyboard.js";
 import { solveBoard } from "../../modules/2048.js";
+import { registerTool } from "../ui.js";
+
+export function initAuto2048Tool() {
+  const content = document.createElement("div");
+  content.style.display = "flex";
+  content.style.flexDirection = "column";
+  content.style.gap = "8px";
+
+  const label = document.createElement("label");
+  label.textContent = "Auto 2048:";
+  label.htmlFor = "th-auto-2048-button";
+  content.appendChild(label);
+  const button = document.createElement("button");
+  button.id = "th-auto-2048-button";
+  button.textContent = "Start";
+  button.style.padding = "4px 8px";
+  button.style.fontSize = "14px";
+  button.style.cursor = "pointer";
+
+  content.appendChild(button);
+
+  button.addEventListener("click", () => {
+    if (__auto2048Running) {
+      __auto2048Running = false;
+      button.textContent = "Start";
+      return;
+    }
+    if (window.socket === undefined) {
+      alert("Feature unavailable. WebSocket not captured.");
+      return;
+    }
+    button.textContent = "Stop";
+    // start autosolve; when it finishes, restore button text
+    autosolve().finally(() => {
+      button.textContent = "Start";
+    });
+  });
+
+  if (typeof registerTool === "function") {
+    // registerTool expects an options object { id, content, onInit }
+    registerTool({ id: "th-auto-2048", content });
+  }
+}
 
 export function parseboard() {
   let b = terminal.getViewportContent();
