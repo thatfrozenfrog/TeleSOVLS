@@ -11,36 +11,31 @@ export function initAuto2048Tool() {
 
   const label = document.createElement("label");
   label.textContent = "Auto 2048:";
-  label.htmlFor = "th-auto-2048-button";
+  label.htmlFor = "th-auto-2048-toggle";
   content.appendChild(label);
-  const button = document.createElement("button");
-  button.id = "th-auto-2048-button";
-  button.textContent = "Start";
-  button.style.padding = "4px 8px";
-  button.style.fontSize = "14px";
-  button.style.cursor = "pointer";
 
-  content.appendChild(button);
+  const toggle = document.createElement("label");
+  toggle.className = "th-switch";
 
-  button.addEventListener("click", () => {
-    if (__auto2048Running) {
-      __auto2048Running = false;
-      button.textContent = "Start";
-      return;
-    }
-    if (window.socket === undefined) {
-      alert("Feature unavailable. WebSocket not captured.");
-      return;
-    }
-    button.textContent = "Stop";
-    // start autosolve; when it finishes, restore button text
-    autosolve().finally(() => {
-      button.textContent = "Start";
-    });
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.id = "th-auto-2048-toggle";
+  toggle.appendChild(checkbox);
+
+  const slider = document.createElement("span");
+  slider.className = "th-switch-slider";
+  toggle.appendChild(slider);
+
+  content.appendChild(toggle);
+
+  setAuto2048Toggle(checkbox);
+
+  checkbox.checked = __auto2048Running;
+  checkbox.addEventListener("change", () => {
+    handleAuto2048Toggle(checkbox.checked);
   });
 
   if (typeof registerTool === "function") {
-    // registerTool expects an options object { id, content, onInit }
     registerTool({ id: "th-auto-2048", content });
   }
 }
@@ -68,6 +63,56 @@ export function parseboard() {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let __auto2048Running = false;
+let auto2048Toggle = null;
+let auto2048Task = null;
+
+function setAuto2048Toggle(toggle) {
+  auto2048Toggle = toggle;
+}
+
+function syncAuto2048Toggle(running) {
+  if (auto2048Toggle && auto2048Toggle.checked !== running) {
+    auto2048Toggle.checked = running;
+  }
+}
+
+function setAuto2048Running(running) {
+  __auto2048Running = running;
+  syncAuto2048Toggle(running);
+}
+
+function ensureSocketReady() {
+  const socket = window?.socket;
+  if (!socket || socket.readyState !== 1) {
+    alert("Feature unavailable. WebSocket not captured.");
+    return false;
+  }
+  return true;
+}
+
+function handleAuto2048Toggle(shouldRun) {
+  if (shouldRun) {
+    if (!ensureSocketReady()) {
+      syncAuto2048Toggle(false);
+      return;
+    }
+    if (__auto2048Running || auto2048Task) {
+      syncAuto2048Toggle(true);
+      return;
+    }
+    setAuto2048Running(true);
+    auto2048Task = autosolve()
+      .catch((error) => {
+        console.error("auto2048: failed to run", error);
+      })
+      .finally(() => {
+        auto2048Task = null;
+        setAuto2048Running(false);
+      });
+  } else {
+    setAuto2048Running(false);
+  }
+}
 
 function attachCtrlCToStop() {
   const term = window?.term;
@@ -127,7 +172,9 @@ async function sendKeyAndWait(key, prevViewport) {
 }
 
 export async function autosolve() {
-  __auto2048Running = true;
+  if (!__auto2048Running) {
+    __auto2048Running = true;
+  }
   try {
     alert("Auto 2048 script started. Press Ctrl+C to stop.");
   } catch {}
