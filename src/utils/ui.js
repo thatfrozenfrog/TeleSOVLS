@@ -1,49 +1,50 @@
-// Toolbar state
+// Wurst-inspired toolbar experience
 let toolbarInitialized = false;
 let toolbarHost = null;
 let toolbarRoot = null;
 let toolbarElement = null;
+let panelContainer = null;
 let hamburgerButton = null;
 const registeredTools = [];
 let activeDragPanel = null;
 let dropPlaceholder = null;
 let dragSourceId = null;
-let matrixCanvas = null;
-let matrixCtx = null;
-let matrixDrops = [];
-let matrixColumns = 0;
-let matrixAnimationFrame = null;
-let matrixResizeObserver = null;
-let matrixLastTimestamp = 0;
-let matrixBackgroundInitialized = false;
+let moduleWindow = null;
+let searchInput = null;
+let currentSearchTerm = "";
 
-const MATRIX_CHARACTERS =
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}".split(
-    "",
-  );
-const MATRIX_FONT_SIZE = 14;
-const MATRIX_FRAME_INTERVAL = 42; // ~24 FPS for subtle motion
+function toTitleCase(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return "Module";
+  }
+  let sanitized = value.trim();
+  sanitized = sanitized.replace(/^th(?=[-_]|$)/i, "");
+  sanitized = sanitized.replace(/^[-_\s]+/, "");
+  if (!sanitized) {
+    return "Module";
+  }
+  return sanitized
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 function createDragPlaceholder(fromPanel) {
   const placeholderEl = document.createElement("article");
   placeholderEl.className = "th-tool-panel drag-placeholder";
-  placeholderEl.style.height = fromPanel.offsetHeight + "px";
-  placeholderEl.style.minWidth = fromPanel.offsetWidth + "px";
+  placeholderEl.style.height = `${fromPanel.offsetHeight}px`;
+  placeholderEl.style.width = `${fromPanel.offsetWidth}px`;
   placeholderEl.dataset.open = "true";
-  placeholderEl.addEventListener("dragover", (ev) => {
-    ev.preventDefault();
-    if (ev.dataTransfer) {
-      ev.dataTransfer.dropEffect = "move";
-    }
-  });
+  placeholderEl.dataset.title = fromPanel.dataset.title || "";
   return placeholderEl;
 }
 
 function updateRegisteredOrder() {
-  if (!toolbarElement) return;
+  if (!panelContainer) return;
   const toolsById = new Map(registeredTools.map((tool) => [tool.id, tool]));
   const orderedPanels = Array.from(
-    toolbarElement.querySelectorAll(".th-tool-panel:not(.drag-placeholder)"),
+    panelContainer.querySelectorAll(".th-tool-panel:not(.drag-placeholder)"),
   );
   const newOrder = orderedPanels
     .map((panelEl) => toolsById.get(panelEl.id))
@@ -52,125 +53,75 @@ function updateRegisteredOrder() {
   registeredTools.push(...newOrder);
 }
 
-function resizeMatrixCanvas() {
-  if (!matrixCanvas || !toolbarElement) return;
-  const rect = toolbarElement.getBoundingClientRect();
-  const width = Math.max(1, Math.round(rect.width));
-  const height = Math.max(1, Math.round(rect.height));
+function filterPanels(searchTerm) {
+  currentSearchTerm = searchTerm.trim().toLowerCase();
 
-  if (matrixCanvas.width !== width || matrixCanvas.height !== height) {
-    matrixCanvas.width = width;
-    matrixCanvas.height = height;
-  }
+  const hasQuery = currentSearchTerm.length > 0;
+  let visibleCount = 0;
 
-  matrixCanvas.style.width = `${width}px`;
-  matrixCanvas.style.height = `${height}px`;
+  registeredTools.forEach(({ panel }) => {
+    const title = (panel.dataset.title || "").toLowerCase();
+    const contentText = (panel.textContent || "").toLowerCase();
+    const matches =
+      !hasQuery ||
+      title.includes(currentSearchTerm) ||
+      contentText.includes(currentSearchTerm);
 
-  const ctx = matrixCanvas.getContext("2d");
-  if (!ctx) return;
-  matrixCtx = ctx;
+    panel.classList.toggle("th-hidden", !matches);
+    panel.dataset.open = matches && isToolbarOpen() ? "true" : "false";
 
-  matrixCtx.fillStyle = "rgba(0, 0, 0, 1)";
-  matrixCtx.fillRect(0, 0, width, height);
-
-  const nextColumns = Math.max(1, Math.floor(width / MATRIX_FONT_SIZE));
-  const nextDrops = new Array(nextColumns);
-  for (let i = 0; i < nextColumns; i++) {
-    nextDrops[i] =
-      matrixDrops[i] ?? Math.random() * (height / MATRIX_FONT_SIZE);
-  }
-  matrixColumns = nextColumns;
-  matrixDrops = nextDrops;
-}
-
-function drawMatrixFrame(timestamp) {
-  if (!matrixCanvas || !matrixCtx) {
-    matrixAnimationFrame = requestAnimationFrame(drawMatrixFrame);
-    return;
-  }
-
-  if (timestamp - matrixLastTimestamp < MATRIX_FRAME_INTERVAL) {
-    matrixAnimationFrame = requestAnimationFrame(drawMatrixFrame);
-    return;
-  }
-  matrixLastTimestamp = timestamp;
-
-  matrixCtx.fillStyle = "rgba(3, 6, 6, 0.28)";
-  matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-
-  matrixCtx.fillStyle = "rgba(57, 255, 20, 0.9)";
-  matrixCtx.font = `${MATRIX_FONT_SIZE}px "JetBrains Mono", "Fira Code", monospace`;
-
-  for (let i = 0; i < matrixColumns; i++) {
-    const char =
-      MATRIX_CHARACTERS[Math.floor(Math.random() * MATRIX_CHARACTERS.length)];
-    const x = i * MATRIX_FONT_SIZE;
-    const y = matrixDrops[i] * MATRIX_FONT_SIZE;
-    matrixCtx.fillText(char, x, y);
-
-    if (y > matrixCanvas.height && Math.random() > 0.965) {
-      matrixDrops[i] = 0;
+    if (matches) {
+      visibleCount += 1;
     }
+  });
 
-    matrixDrops[i] += 1;
+  if (moduleWindow) {
+    moduleWindow.classList.toggle("th-empty", visibleCount === 0);
+  }
+}
+
+function handlePanelContainerDragOver(ev) {
+  if (!dropPlaceholder || !panelContainer) return;
+
+  ev.preventDefault();
+  if (ev.dataTransfer) {
+    ev.dataTransfer.dropEffect = "move";
   }
 
-  matrixAnimationFrame = requestAnimationFrame(drawMatrixFrame);
-}
-
-function startMatrixAnimation() {
-  if (matrixAnimationFrame !== null) return;
-  matrixAnimationFrame = requestAnimationFrame(drawMatrixFrame);
-}
-
-function ensureMatrixBackground() {
-  if (matrixBackgroundInitialized || !toolbarElement) return;
-  matrixBackgroundInitialized = true;
-
-  matrixCanvas = document.createElement("canvas");
-  matrixCanvas.className = "th-matrix-canvas";
-  matrixCanvas.width = 1;
-  matrixCanvas.height = 1;
-  toolbarElement.insertBefore(matrixCanvas, toolbarElement.firstChild || null);
-
-  resizeMatrixCanvas();
-
-  if (typeof ResizeObserver !== "undefined") {
-    matrixResizeObserver = new ResizeObserver(() => resizeMatrixCanvas());
-    matrixResizeObserver.observe(toolbarElement);
-  }
-
-  window.addEventListener("resize", resizeMatrixCanvas);
-  startMatrixAnimation();
-}
-
-function handleToolbarDragOver(ev) {
-  if (!dropPlaceholder || !toolbarElement) return;
   const target =
     ev.target instanceof HTMLElement
       ? ev.target.closest(".th-tool-panel")
       : null;
 
-  if (!target) {
-    ev.preventDefault();
-    if (ev.dataTransfer) {
-      ev.dataTransfer.dropEffect = "move";
+  if (!target || target === dropPlaceholder) {
+    if (panelContainer.lastElementChild !== dropPlaceholder) {
+      panelContainer.appendChild(dropPlaceholder);
     }
-    if (hamburgerButton) {
-      toolbarElement.insertBefore(dropPlaceholder, hamburgerButton);
-    } else if (dropPlaceholder.parentNode !== toolbarElement) {
-      toolbarElement.appendChild(dropPlaceholder);
+    return;
+  }
+
+  if (target === activeDragPanel) {
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  const offset = ev.clientY - rect.top;
+  const insertBefore = offset <= rect.height / 2;
+
+  if (insertBefore) {
+    if (target.previousSibling !== dropPlaceholder) {
+      panelContainer.insertBefore(dropPlaceholder, target);
     }
-  } else if (target === dropPlaceholder) {
-    ev.preventDefault();
-    if (ev.dataTransfer) {
-      ev.dataTransfer.dropEffect = "move";
+  } else {
+    const nextSibling = target.nextSibling;
+    if (nextSibling !== dropPlaceholder) {
+      panelContainer.insertBefore(dropPlaceholder, nextSibling);
     }
   }
 }
 
-function handleToolbarDrop(ev) {
-  if (!dropPlaceholder || !activeDragPanel || !toolbarElement) return;
+function handlePanelContainerDrop(ev) {
+  if (!dropPlaceholder || !activeDragPanel || !panelContainer) return;
   const sourceId = ev.dataTransfer?.getData("text/plain") || dragSourceId;
   if (!sourceId || sourceId !== activeDragPanel.id) return;
 
@@ -179,7 +130,7 @@ function handleToolbarDrop(ev) {
     ev.dataTransfer.dropEffect = "move";
   }
 
-  toolbarElement.insertBefore(activeDragPanel, dropPlaceholder);
+  panelContainer.insertBefore(activeDragPanel, dropPlaceholder);
   dropPlaceholder.remove();
   dropPlaceholder = null;
 
@@ -192,10 +143,6 @@ function handleToolbarDrop(ev) {
   dragSourceId = null;
 }
 
-/**
- * Initialize the toolbar infrastructure (hamburger button and container).
- * Called automatically when the first tool is registered.
- */
 function initializeToolbar() {
   if (toolbarInitialized) return;
   toolbarInitialized = true;
@@ -204,394 +151,499 @@ function initializeToolbar() {
   toolbarHost.id = "th-toolbar-host";
   toolbarHost.style.all = "initial";
   toolbarHost.style.position = "fixed";
-  toolbarHost.style.zIndex = "2147483647";
   toolbarHost.style.bottom = "24px";
-  toolbarHost.style.right = "24px";
+  toolbarHost.style.right = "32px";
+  toolbarHost.style.zIndex = "2147483646";
+  toolbarHost.style.pointerEvents = "none";
 
   toolbarRoot = toolbarHost.attachShadow({ mode: "open" });
 
   const style = document.createElement("style");
   style.textContent = `
+    .th-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .th-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .th-switch-slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background: rgba(32, 32, 32, 0.85);
+      border: 1px solid rgba(245, 159, 0, 0.45);
+      border-radius: 999px;
+      transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .th-switch-slider::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255, 240, 210, 0.85);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      transform: translate(0, -50%);
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .th-switch input:checked + .th-switch-slider {
+      background: rgba(245, 159, 0, 0.6);
+      border-color: rgba(245, 159, 0, 0.75);
+      box-shadow: 0 0 0 1px rgba(245, 159, 0, 0.35);
+    }
+
+    .th-switch input:checked + .th-switch-slider::before {
+      transform: translate(22px, -50%);
+      background: rgba(255, 240, 210, 1);
+    }
+
+    .th-switch input:focus-visible + .th-switch-slider {
+      outline: 2px solid rgba(245, 159, 0, 0.75);
+      outline-offset: 2px;
+    }
     :host {
       color-scheme: dark;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
     }
 
     :host, :host * {
       box-sizing: border-box;
-      font-family: "JetBrains Mono", "Fira Code", "IBM Plex Mono", monospace;
-      color: #d9ffe2;
+    }
+
+    #th-toolbar {
+      pointer-events: auto;
     }
 
     .th-toolbar {
-      position: relative;
-      display: inline-flex;
-      gap: 0.9rem;
+      display: flex;
+      flex-direction: column;
       align-items: flex-end;
-      pointer-events: auto;
-      padding: 1rem 1.15rem;
-      border-radius: 28px;
-      background: rgba(4, 9, 10, 0.82);
-      box-shadow:
-        0 22px 48px rgba(0, 0, 0, 0.7),
-        inset 0 0 32px rgba(57, 255, 20, 0.08);
-      overflow: hidden;
-      isolation: isolate;
-      border: 1px solid rgba(57, 255, 20, 0.28);
+      gap: 12px;
     }
 
-    .th-toolbar > :not(.th-matrix-canvas) {
-      position: relative;
+    .th-window {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(20, 20, 20, 0.96);
+      border: 1px solid rgba(245, 159, 0, 0.45);
+      border-radius: 14px;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+      min-width: 240px;
+      max-width: min(420px, 75vw);
+      max-height: clamp(260px, 60vh, 520px);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 160ms ease, transform 160ms ease;
+      pointer-events: none;
+    }
+
+    .th-toolbar.th-open .th-window {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .th-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      background: rgba(20, 20, 20, 0.96);
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(245, 159, 0, 0.2);
       z-index: 1;
     }
 
-    .th-matrix-canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      opacity: 0.82;
-      mix-blend-mode: screen;
-      z-index: 0;
+    .th-search-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 230, 190, 0.9);
+      white-space: nowrap;
     }
 
-    .th-hamburger {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      border: 2px solid rgba(57, 255, 20, 0.85);
-      background: radial-gradient(circle at 30% 30%, rgba(57,255,20,0.18), transparent 55%),
-        #050909;
-      color: #39ff14;
-      display: grid;
-      place-items: center;
-      box-shadow:
-        0 0 22px rgba(57, 255, 20, 0.45),
-        0 0 48px rgba(57, 255, 20, 0.18),
-        inset 0 0 12px rgba(16, 60, 25, 0.95);
-      cursor: pointer;
-      transition: transform 180ms ease, box-shadow 220ms ease;
-      position: relative;
-      overflow: hidden;
+    .th-search-input {
+      flex: 1;
+      min-width: 0;
+      font: inherit;
+      color: #fce7ba;
+      background: rgba(32, 32, 32, 0.92);
+      border: 1px solid rgba(245, 159, 0, 0.35);
+      border-radius: 8px;
+      padding: 6px 10px;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
     }
 
-    .th-hamburger::after {
-      content: "";
-      position: absolute;
-      inset: -30%;
-      background: radial-gradient(circle, rgba(57,255,20,0.08) 0%, transparent 60%);
-      opacity: 0;
-      transition: opacity 200ms ease;
-      pointer-events: none;
+    .th-search-input:focus-visible {
+      outline: none;
+      border-color: rgba(245, 159, 0, 0.8);
+      box-shadow: 0 0 0 2px rgba(245, 159, 0, 0.25);
     }
 
-    .th-hamburger:hover {
-      transform: translateY(-2px) scale(1.03);
-      box-shadow:
-        0 0 32px rgba(57, 255, 20, 0.55),
-        0 0 68px rgba(57, 255, 20, 0.22),
-        inset 0 0 16px rgba(16, 60, 25, 0.95);
+    .th-panel-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-top: 6px;
+      padding-right: 2px;
     }
 
-    .th-hamburger:hover::after,
-    .th-hamburger:focus-visible::after {
-      opacity: 1;
+    .th-panel-container::-webkit-scrollbar {
+      width: 6px;
     }
 
-    .th-hamburger:focus-visible {
-      outline: 2px solid rgba(57, 255, 20, 0.9);
-      outline-offset: 4px;
-    }
-
-    .th-hamburger-icon,
-    .th-hamburger-icon::before,
-    .th-hamburger-icon::after {
-      content: "";
-      width: 24px;
-      height: 3px;
-      border-radius: 6px;
-      background: currentColor;
-      display: block;
-      transition: transform 200ms ease, opacity 200ms ease;
-      position: relative;
-    }
-
-    .th-hamburger-icon::before,
-    .th-hamburger-icon::after {
-      position: absolute;
-      left: 0;
-      background: linear-gradient(90deg, rgba(57,255,20,0.25), #39ff14, rgba(57,255,20,0.25));
-      box-shadow: 0 0 8px rgba(57,255,20,0.65);
-    }
-
-    .th-hamburger-icon::before { top: -8px; }
-    .th-hamburger-icon::after { top: 8px; }
-
-    .th-hamburger.open .th-hamburger-icon {
-      transform: rotate(45deg);
-    }
-
-    .th-hamburger.open .th-hamburger-icon::before {
-      transform: rotate(-90deg);
-      top: 0;
-    }
-
-    .th-hamburger.open .th-hamburger-icon::after {
-      opacity: 0;
+    .th-panel-container::-webkit-scrollbar-thumb {
+      background: rgba(245, 159, 0, 0.35);
+      border-radius: 999px;
     }
 
     .th-tool-panel {
-      display: none;
-      min-width: 270px;
-      padding: 1.25rem 1.5rem;
-      border-radius: 18px;
-      background: linear-gradient(145deg, rgba(7, 14, 16, 0.94), rgba(4, 9, 11, 0.98));
-      border: 1px solid rgba(57, 255, 20, 0.35);
-      box-shadow:
-        0 18px 32px rgba(0, 0, 0, 0.65),
-        0 0 28px rgba(57, 255, 20, 0.18);
-      backdrop-filter: blur(8px);
-      color: #d9ffe2;
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px 16px;
+      border-radius: 10px;
+      background: rgba(26, 26, 26, 0.95);
+      border: 1px solid rgba(245, 159, 0, 0.3);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      position: relative;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .th-tool-panel::before {
+      content: attr(data-title);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: rgba(245, 159, 0, 0.85);
+      text-transform: uppercase;
     }
 
     .th-tool-panel[data-open="true"] {
-      display: block;
-      animation: th-panel-in 160ms ease;
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .th-tool-panel.dragging {
-      opacity: 0.5;
-      transform: scale(0.98);
+      opacity: 0.6;
+      transform: translateY(2px) scale(0.99);
     }
 
     .th-tool-panel.drag-placeholder {
-      border: 2px dashed rgba(57, 255, 20, 0.75);
-      background: linear-gradient(145deg, rgba(7, 14, 16, 0.45), rgba(4, 9, 11, 0.5));
-      box-shadow: 
-        0 0 32px rgba(57, 255, 20, 0.35),
-        inset 0 0 24px rgba(57, 255, 20, 0.12);
-      animation: th-placeholder-pulse 1.2s ease-in-out infinite;
+      border: 1px dashed rgba(245, 159, 0, 0.6);
+      background: repeating-linear-gradient(
+        135deg,
+        rgba(245, 159, 0, 0.1),
+        rgba(245, 159, 0, 0.1) 12px,
+        transparent 12px,
+        transparent 24px
+      );
+      animation: th-placeholder-pulse 1100ms ease-in-out infinite;
     }
 
-    @keyframes th-placeholder-pulse {
-      0%, 100% {
-        border-color: rgba(57, 255, 20, 0.75);
-        box-shadow: 
-          0 0 32px rgba(57, 255, 20, 0.35),
-          inset 0 0 24px rgba(57, 255, 20, 0.12);
-      }
-      50% {
-        border-color: rgba(57, 255, 20, 0.95);
-        box-shadow: 
-          0 0 42px rgba(57, 255, 20, 0.45),
-          inset 0 0 32px rgba(57, 255, 20, 0.18);
-      }
+    .th-tool-panel.th-hidden {
+      display: none;
     }
 
     .th-tool-handle {
       width: 100%;
-      height: 14px;
-      margin-bottom: 0.9rem;
-      background-image: radial-gradient(circle, rgba(57,255,20,0.65) 20%, transparent 25%);
-      background-size: 10px 10px;
-      background-position: 0 0;
-      opacity: 0.65;
+      height: 12px;
       border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 20%, transparent 20%) 0 0 / 14px 6px,
+        rgba(255, 255, 255, 0.05);
+      margin-bottom: 6px;
       cursor: grab;
-      transition: opacity 180ms ease;
+      transition: opacity 160ms ease;
+      opacity: 0.55;
     }
 
     .th-tool-handle:hover {
-      opacity: 1;
+      opacity: 0.85;
     }
 
     .th-tool-handle:active {
       cursor: grabbing;
     }
 
+    .th-tool-panel h1,
     .th-tool-panel h2,
-    .th-tool-panel h3 {
-      margin-top: 0;
-      margin-bottom: 0.9rem;
+    .th-tool-panel h3,
+    .th-tool-panel h4 {
+      margin: 0;
       font-size: 1rem;
       font-weight: 600;
-      color: #72ff6b;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+      color: #ffe7a4;
     }
 
     .th-tool-panel label {
+      font-size: 0.82rem;
       font-weight: 600;
-      font-size: 0.85rem;
-      color: rgba(183, 255, 205, 0.88);
-      letter-spacing: 0.05em;
+      color: rgba(255, 226, 173, 0.85);
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .th-tool-panel button,
-    .th-tool-panel select,
     .th-tool-panel input,
+    .th-tool-panel select,
     .th-tool-panel textarea {
-      width: 100%;
-      margin-top: 0.35rem;
-      background: rgba(8, 20, 12, 0.9);
-      color: #d7ffe2;
-      border: 1px solid rgba(57, 255, 20, 0.45);
-      border-radius: 12px;
-      padding: 0.55rem 0.75rem;
-      font-size: 0.9rem;
-      box-shadow:
-        inset 0 0 18px rgba(24, 68, 35, 0.65),
-        0 0 12px rgba(57, 255, 20, 0.18);
-      transition: border-color 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+      font: inherit;
+      color: #fce7ba;
+      background: rgba(32, 32, 32, 0.9);
+      border: 1px solid rgba(245, 159, 0, 0.4);
+      border-radius: 8px;
+      padding: 8px 10px;
+      transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
     }
 
     .th-tool-panel button:hover,
-    .th-tool-panel select:hover,
     .th-tool-panel input:hover,
+    .th-tool-panel select:hover,
     .th-tool-panel textarea:hover {
-      border-color: rgba(57, 255, 20, 0.75);
-      box-shadow:
-        inset 0 0 22px rgba(24, 84, 44, 0.75),
-        0 0 18px rgba(57, 255, 20, 0.22);
-      transform: translateY(-1px);
+      border-color: rgba(245, 159, 0, 0.75);
+      box-shadow: 0 0 0 1px rgba(245, 159, 0, 0.3);
     }
 
     .th-tool-panel button:active {
-      transform: scale(0.98);
-    }
-
-    .th-tool-panel button.primary,
-    .th-tool-panel button,
-    .th-tool-panel button[type="button"],
-    .th-tool-panel button[type="submit"] {
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
+      transform: translateY(1px);
     }
 
     .th-tool-panel small,
     .th-tool-panel p {
-      color: rgba(207, 255, 223, 0.8);
-      font-size: 0.82rem;
+      margin: 0;
+      font-size: 0.85rem;
+      color: rgba(255, 240, 210, 0.78);
       line-height: 1.5;
     }
 
-    @keyframes th-panel-in {
-      from {
-        opacity: 0;
-        transform: translateY(16px) scale(0.96);
+    .th-toggle {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px solid rgba(245, 159, 0, 0.65);
+      background: linear-gradient(180deg, rgba(36, 36, 36, 0.95), rgba(18, 18, 18, 0.95));
+      color: #f4b63d;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.55);
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      position: relative;
+    }
+
+    .th-toggle::after {
+      content: "";
+      position: absolute;
+      inset: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(245, 159, 0, 0.2);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .th-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .th-toggle:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .th-toggle:focus-visible {
+      outline: 2px solid rgba(245, 159, 0, 0.75);
+      outline-offset: 4px;
+    }
+
+    .th-toggle.open {
+      background: linear-gradient(180deg, rgba(245, 159, 0, 0.25), rgba(45, 26, 0, 0.92));
+      color: #ffe7a4;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(245, 159, 0, 0.45);
+    }
+
+    .th-window.th-empty .th-panel-container::after {
+      content: "No modules found";
+      display: block;
+      text-align: center;
+      padding: 24px 8px;
+      color: rgba(255, 240, 210, 0.65);
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+    }
+
+    @keyframes th-placeholder-pulse {
+      0%, 100% {
+        opacity: 0.45;
       }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+      50% {
+        opacity: 0.75;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .th-window,
+      .th-tool-panel {
+        transition: none;
       }
     }
   `;
   toolbarRoot.appendChild(style);
 
-  // Create toolbar container
   toolbarElement = document.createElement("div");
   toolbarElement.id = "th-toolbar";
   toolbarElement.className = "th-toolbar";
-  toolbarElement.addEventListener("dragover", handleToolbarDragOver);
-  toolbarElement.addEventListener("drop", handleToolbarDrop);
+  toolbarElement.setAttribute("role", "region");
+  toolbarElement.setAttribute("aria-label", "TeleSOVLS tools");
 
-  // Create hamburger button
+  panelContainer = document.createElement("div");
+  panelContainer.id = "th-panel-container";
+  panelContainer.className = "th-panel-container";
+  panelContainer.setAttribute("role", "group");
+  panelContainer.addEventListener("dragover", handlePanelContainerDragOver);
+  panelContainer.addEventListener("drop", handlePanelContainerDrop);
+
+  moduleWindow = document.createElement("div");
+  moduleWindow.className = "th-window";
+  moduleWindow.setAttribute("role", "dialog");
+  moduleWindow.setAttribute("aria-label", "TeleSOVLS modules");
+
+  const searchWrapper = document.createElement("div");
+  searchWrapper.className = "th-search";
+  searchWrapper.setAttribute("role", "search");
+
+  const searchLabel = document.createElement("span");
+  searchLabel.className = "th-search-label";
+  searchLabel.textContent = "Search";
+  searchWrapper.appendChild(searchLabel);
+
+  searchInput = document.createElement("input");
+  searchInput.type = "search";
+  searchInput.className = "th-search-input";
+  searchInput.placeholder = "Search modules…";
+  searchInput.autocomplete = "off";
+  searchInput.spellcheck = false;
+  searchInput.setAttribute("aria-label", "Search modules");
+  searchInput.addEventListener("input", (event) => {
+    filterPanels(event.target.value || "");
+  });
+  searchWrapper.appendChild(searchInput);
+
+  moduleWindow.appendChild(searchWrapper);
+  moduleWindow.appendChild(panelContainer);
+
   hamburgerButton = document.createElement("button");
-  hamburgerButton.id = "th-hamburger";
-  hamburgerButton.className = "th-hamburger";
+  hamburgerButton.id = "th-toggle";
+  hamburgerButton.className = "th-toggle";
   hamburgerButton.type = "button";
+  hamburgerButton.textContent = "W";
   hamburgerButton.setAttribute("aria-expanded", "false");
-  hamburgerButton.setAttribute("aria-label", "Open toolbar");
+  hamburgerButton.setAttribute("aria-controls", panelContainer.id);
+  hamburgerButton.setAttribute("aria-label", "Toggle toolbar");
 
-  const hamburgerIcon = document.createElement("span");
-  hamburgerIcon.className = "th-hamburger-icon";
-  hamburgerButton.appendChild(hamburgerIcon);
-
-  // Hamburger click handler
   hamburgerButton.addEventListener("click", (ev) => {
     ev.stopPropagation();
     toggleToolbar();
   });
 
-  // Close toolbar when clicking outside
   document.addEventListener("click", (ev) => {
     if (!toolbarHost) return;
     if (toolbarHost.contains(ev.target)) return;
-    if (isToolbarOpen()) closeToolbar();
+    if (isToolbarOpen()) {
+      closeToolbar();
+    }
   });
 
-  // Close toolbar on Escape
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isToolbarOpen()) closeToolbar();
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && isToolbarOpen()) {
+      closeToolbar();
+      if (hamburgerButton) {
+        hamburgerButton.focus();
+      }
+    }
   });
 
+  toolbarElement.appendChild(moduleWindow);
   toolbarElement.appendChild(hamburgerButton);
+
   toolbarRoot.appendChild(toolbarElement);
   document.body.appendChild(toolbarHost);
-
-  requestAnimationFrame(() => {
-    ensureMatrixBackground();
-    resizeMatrixCanvas();
-  });
 }
 
-/**
- * Check if any tool panel is currently visible.
- */
 function isToolbarOpen() {
-  return registeredTools.some((tool) => tool.panel.dataset.open === "true");
+  return Boolean(
+    toolbarElement && toolbarElement.classList.contains("th-open"),
+  );
 }
 
-/**
- * Open the toolbar (show all tool panels).
- */
 function openToolbar() {
+  if (!toolbarElement || !panelContainer) return;
+  toolbarElement.classList.add("th-open");
+  if (hamburgerButton) {
+    hamburgerButton.classList.add("open");
+    hamburgerButton.setAttribute("aria-expanded", "true");
+  }
   registeredTools.forEach((tool) => {
     tool.panel.dataset.open = "true";
   });
-  hamburgerButton.classList.add("open");
-  hamburgerButton.setAttribute("aria-expanded", "true");
-  if (matrixCanvas) {
-    requestAnimationFrame(resizeMatrixCanvas);
+  filterPanels(currentSearchTerm);
+  if (searchInput) {
+    searchInput.focus({ preventScroll: true });
+    searchInput.select();
   }
 }
 
-/**
- * Close the toolbar (hide all tool panels).
- */
 function closeToolbar() {
+  if (!toolbarElement || !panelContainer) return;
+  toolbarElement.classList.remove("th-open");
+  if (hamburgerButton) {
+    hamburgerButton.classList.remove("open");
+    hamburgerButton.setAttribute("aria-expanded", "false");
+  }
   registeredTools.forEach((tool) => {
     tool.panel.dataset.open = "false";
   });
-  hamburgerButton.classList.remove("open");
-  hamburgerButton.setAttribute("aria-expanded", "false");
-  if (matrixCanvas) {
-    requestAnimationFrame(resizeMatrixCanvas);
-  }
+  filterPanels(currentSearchTerm);
 }
 
-/**
- * Toggle toolbar open/closed.
- */
 function toggleToolbar() {
   if (isToolbarOpen()) {
     closeToolbar();
-  } else {
+  } else if (registeredTools.length > 0) {
     openToolbar();
   }
 }
 
-/**
- * Register a new tool with the toolbar.
- * @param {Object} options - Tool configuration
- * @param {string} options.id - Unique ID for the tool panel
- * @param {HTMLElement} options.content - The content/element to display in the tool panel
- * @param {Function} [options.onInit] - Optional callback after panel is added to DOM
- * @returns {HTMLElement} The created panel element
- */
 function normalizeToolOptions(optionsOrId, maybeContent, maybeOnInit) {
   if (typeof optionsOrId === "string") {
     return {
@@ -628,33 +680,36 @@ export function registerTool(optionsOrId, maybeContent, maybeOnInit) {
     throw new Error("registerTool requires content to render");
   }
 
-  // Initialize toolbar if not already done
   if (!toolbarInitialized) {
     initializeToolbar();
   }
 
-  // Check if tool already registered
-  if (registeredTools.some((tool) => tool.id === id)) {
+  const existing = registeredTools.find((tool) => tool.id === id);
+  if (existing) {
     console.warn(`Tool with id "${id}" is already registered.`);
-    return registeredTools.find((tool) => tool.id === id).panel;
+    return existing.panel;
   }
 
-  // Create tool panel
   const panel = document.createElement("article");
   panel.id = id;
   panel.className = "th-tool-panel";
-  panel.dataset.open = "false";
+  panel.dataset.open = isToolbarOpen() ? "true" : "false";
+  panel.dataset.title = toTitleCase(id);
 
-  // Add content
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "th-tool-handle";
+  dragHandle.setAttribute("role", "presentation");
+  dragHandle.title = "Drag to reorder";
+  panel.appendChild(dragHandle);
+
   if (content instanceof HTMLElement) {
     panel.appendChild(content);
   } else if (typeof content === "string") {
-    panel.innerHTML = content;
+    panel.insertAdjacentHTML("beforeend", content);
   } else {
-    panel.textContent = String(content);
+    panel.appendChild(document.createTextNode(String(content)));
   }
 
-  // Prevent clicks inside panel from closing toolbar
   panel.addEventListener("click", (ev) => {
     const target = ev.target;
     if (target instanceof HTMLElement) {
@@ -673,13 +728,6 @@ export function registerTool(optionsOrId, maybeContent, maybeOnInit) {
     }
     ev.stopPropagation();
   });
-
-  // Insert panel before the hamburger button (so panels appear to the left)
-  const dragHandle = document.createElement("div");
-  dragHandle.className = "th-tool-handle";
-  dragHandle.setAttribute("role", "presentation");
-  dragHandle.title = "Drag to reorder";
-  panel.prepend(dragHandle);
 
   panel.setAttribute("draggable", "false");
 
@@ -735,7 +783,7 @@ export function registerTool(optionsOrId, maybeContent, maybeOnInit) {
       ev.dataTransfer.setDragImage(panel, panel.offsetWidth / 2, 18);
     }
 
-    toolbarElement.insertBefore(dropPlaceholder, panel);
+    panelContainer.insertBefore(dropPlaceholder, panel);
     requestAnimationFrame(() => {
       panel.style.display = "none";
     });
@@ -748,8 +796,8 @@ export function registerTool(optionsOrId, maybeContent, maybeOnInit) {
     panel.classList.remove("dragging");
     disableDrag();
 
-    if (dropPlaceholder && dropPlaceholder.parentNode === toolbarElement) {
-      toolbarElement.insertBefore(panel, dropPlaceholder);
+    if (dropPlaceholder && dropPlaceholder.parentNode === panelContainer) {
+      panelContainer.insertBefore(panel, dropPlaceholder);
       dropPlaceholder.remove();
       updateRegisteredOrder();
     }
@@ -759,56 +807,19 @@ export function registerTool(optionsOrId, maybeContent, maybeOnInit) {
     dragSourceId = null;
   });
 
-  panel.addEventListener("dragover", (ev) => {
-    if (!dropPlaceholder || !activeDragPanel || panel === activeDragPanel)
-      return;
+  panelContainer.appendChild(panel);
 
-    ev.preventDefault();
-    if (ev.dataTransfer) {
-      ev.dataTransfer.dropEffect = "move";
-    }
-
-    const rect = panel.getBoundingClientRect();
-    const offset = ev.clientY - rect.top;
-    const ratio = offset / rect.height;
-
-    if (ratio <= 0.4) {
-      if (panel.previousSibling !== dropPlaceholder) {
-        toolbarElement.insertBefore(dropPlaceholder, panel);
-      }
-    } else {
-      const nextSibling =
-        panel.nextSibling === dropPlaceholder
-          ? dropPlaceholder.nextSibling
-          : panel.nextSibling;
-      toolbarElement.insertBefore(
-        dropPlaceholder,
-        nextSibling || hamburgerButton,
-      );
-    }
-  });
-
-  toolbarElement.insertBefore(panel, hamburgerButton);
-
-  // Register tool
   registeredTools.push({ id, panel });
 
-  // Call initialization callback if provided
   if (typeof onInit === "function") {
     onInit(panel);
   }
 
-  if (matrixCanvas) {
-    requestAnimationFrame(resizeMatrixCanvas);
-  }
+  filterPanels(currentSearchTerm);
 
   return panel;
 }
 
-/**
- * Legacy function for backward compatibility.
- * Initializes the toolbar (now happens automatically on first registerTool call).
- */
 export function createUI() {
   if (!toolbarInitialized) {
     initializeToolbar();
