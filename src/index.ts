@@ -15,7 +15,7 @@ import { solveBoard } from "./modules/2048";
 import { solveAutovon } from "./modules/autovon";
 import { sendkey } from "./utils/keyboard";
 import { parseboard, autosolve, initAuto2048Tool } from "./utils/auto/auto2048";
-
+import { initTypespeedTool } from "./utils/auto/autotypespeed";
 declare global {
   interface Window {
     i?: any;
@@ -65,6 +65,7 @@ function testsend() {
       window.term = window.i;
       initThemeTool();
       initAuto2048Tool();
+      initTypespeedTool();
       try {
         const savedTheme = localStorage.getItem("th-selected-theme");
         if (savedTheme && typeof savedTheme === "string") {
