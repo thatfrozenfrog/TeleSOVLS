@@ -13,7 +13,7 @@ import {
 } from "./utils/terminal";
 import { solveBoard } from "./modules/2048";
 import { solveAutovon } from "./modules/autovon";
-import { sendkey } from "./utils/keyboard";
+import { sendkey, type } from "./utils/keyboard";
 import { parseboard, autosolve, initAuto2048Tool } from "./utils/auto/auto2048";
 import { initTypespeedTool } from "./utils/auto/autotypespeed";
 declare global {
@@ -37,6 +37,7 @@ declare global {
     solveBoard: typeof solveBoard;
     parseboard: typeof parseboard;
     autosolve: typeof solveBoard;
+    type: typeof type;
   }
 }
 
@@ -97,4 +98,5 @@ function testsend() {
   window.solveBoard = solveBoard;
   window.parseboard = parseboard;
   window.autosolve = autosolve;
+  window.type = type;
 })();

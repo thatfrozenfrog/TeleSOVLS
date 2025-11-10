@@ -65,3 +65,14 @@ export function sendkey(key, modifiers = {}) {
   if (!payload) return;
   socket.send(payload);
 }
+
+export async function type(text, delay = 50) {
+  for (const ch of text) {
+    socket.send(ch);
+    await sleep(delay);
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
