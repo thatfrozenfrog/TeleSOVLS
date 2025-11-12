@@ -4,13 +4,13 @@ const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 
 const webpackConfig = {
   resolve: {
-    extensions: [".js", ".ts"],
+    extensions: [".js"],
   },
   optimization: {
     minimize: false,
     moduleIds: "named",
   },
-  entry: "./src/index.ts",
+  entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "../dist"),
     // Clean the output directory before emit (Webpack 5+)
@@ -22,12 +22,6 @@ const webpackConfig = {
   },
   module: {
     rules: [
-      {
-        test: /\.m?[jt]s$/,
-        use: {
-          loader: "ts-loader",
-        },
-      },
       {
         test: /\.less$/,
         use: ["style-loader", "css-loader", "less-loader"],

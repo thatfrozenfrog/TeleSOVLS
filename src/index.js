@@ -1,7 +1,6 @@
 /**
  * Main entry point for Telehack userscript
  */
-import { hook } from "./utils/hook";
 import { applyTheme, changeTheme, initThemeTool } from "./utils/theme.js";
 import {
   getViewportContent,
@@ -10,36 +9,16 @@ import {
   getCursorPosition,
   getAbsoluteCursorPosition,
   getLastLines,
-} from "./utils/terminal";
-import { solveBoard } from "./modules/2048";
-import { solveAutovon } from "./modules/autovon";
-import { sendkey, type } from "./utils/keyboard";
-import { parseboard, autosolve, initAuto2048Tool } from "./utils/auto/auto2048";
-import { initTypespeedTool } from "./utils/auto/autotypespeed";
-declare global {
-  interface Window {
-    i?: any;
-    n?: any;
-    term?: any;
-    socket?: any;
-    __capturedSockets?: any[];
-    getViewportContent: typeof getViewportContent;
-    getViewportLines: typeof getViewportLines;
-    getCurrentLine: typeof getCurrentLine;
-    getCursorPosition: typeof getCursorPosition;
-    getAbsoluteCursorPosition: typeof getAbsoluteCursorPosition;
-
-    getLastLines: typeof getLastLines;
-    sendkey: typeof sendkey;
-    applyTheme: typeof applyTheme;
-    testsend: typeof testsend;
-    solveAutovon: typeof solveAutovon;
-    solveBoard: typeof solveBoard;
-    parseboard: typeof parseboard;
-    autosolve: typeof solveBoard;
-    type: typeof type;
-  }
-}
+} from "./utils/terminal.js";
+import { solveBoard } from "./modules/2048.js";
+import { solveAutovon } from "./modules/autovon.js";
+import { sendkey, type } from "./utils/keyboard.js";
+import {
+  parseboard,
+  autosolve,
+  initAuto2048Tool,
+} from "./utils/auto/auto2048.js";
+import { initTypespeedTool } from "./utils/auto/autotypespeed.js";
 
 function loadFonts() {
   const link = document.createElement("link");
@@ -57,7 +36,28 @@ function testsend() {
 }
 
 (function () {
-  hook();
+  const RealWS = window.WebSocket;
+
+  class HookedWebSocket extends RealWS {
+    constructor(url, protocols) {
+      super(url, protocols);
+
+      const captured =
+        window.__capturedSockets ?? (window.__capturedSockets = []);
+      captured.push(this);
+
+      if (!window.n) {
+        window.n = this;
+      }
+
+      if (!window.socket) {
+        window.socket = this;
+      }
+
+      console.log("[hook] captured", this.url);
+    }
+  }
+  window.WebSocket = HookedWebSocket;
 
   function waitReady() {
     loadFonts();
@@ -92,7 +92,7 @@ function testsend() {
   window.applyTheme = applyTheme;
   window.sendkey = sendkey;
   window.getLastLines = getLastLines;
-  //test only, remove later
+  // test only, remove later
   window.testsend = testsend;
   window.solveAutovon = solveAutovon;
   window.solveBoard = solveBoard;
