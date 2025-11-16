@@ -1,43 +1,20 @@
 import * as terminal from "../terminal.js";
 import * as keyboard from "../keyboard.js";
 import { solveBoard } from "../../modules/2048.js";
-import { registerTool } from "../ui.js";
+import { registerToggleTool } from "../ui.js";
 
 export function initAuto2048Tool() {
-  const content = document.createElement("div");
-  content.style.display = "flex";
-  content.style.flexDirection = "column";
-  content.style.gap = "8px";
-
-  const label = document.createElement("label");
-  label.textContent = "Auto 2048:";
-  label.htmlFor = "th-auto-2048-toggle";
-  content.appendChild(label);
-
-  const toggle = document.createElement("label");
-  toggle.className = "th-switch";
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.id = "th-auto-2048-toggle";
-  toggle.appendChild(checkbox);
-
-  const slider = document.createElement("span");
-  slider.className = "th-switch-slider";
-  toggle.appendChild(slider);
-
-  content.appendChild(toggle);
-
-  setAuto2048Toggle(checkbox);
-
-  checkbox.checked = __auto2048Running;
-  checkbox.addEventListener("change", () => {
-    handleAuto2048Toggle(checkbox.checked);
+  const { checkbox } = registerToggleTool({
+    id: "th-auto-2048",
+    title: "Auto 2048:",
+    toggleId: "th-auto-2048-toggle",
+    initialChecked: __auto2048Running,
+    onToggleChange: (checked) => {
+      handleAuto2048Toggle(checked);
+    },
   });
 
-  if (typeof registerTool === "function") {
-    registerTool({ id: "th-auto-2048", content });
-  }
+  setAuto2048Toggle(checkbox);
 }
 
 export function parseboard() {

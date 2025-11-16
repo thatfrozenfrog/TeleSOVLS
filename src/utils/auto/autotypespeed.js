@@ -1,4 +1,4 @@
-import { registerTool } from "../ui.js";
+import { registerToggleTool, createInputControl } from "../ui.js";
 import { getLastLines } from "../terminal.js";
 import { sendkey } from "../keyboard.js";
 import { type } from "../keyboard.js";
@@ -13,29 +13,6 @@ function normalizeDelay(value, fallback) {
     return parsed;
   }
   return fallback;
-}
-
-function createDelayInput(id, labelText, initialValue, onUpdate) {
-  const wrapper = document.createElement("label");
-  wrapper.style.display = "flex";
-  wrapper.style.flexDirection = "column";
-  wrapper.style.fontSize = "12px";
-  wrapper.textContent = labelText;
-
-  const input = document.createElement("input");
-  input.type = "number";
-  input.min = "0";
-  input.step = "10";
-  input.value = String(initialValue);
-  input.id = id;
-  input.addEventListener("change", () => {
-    const updated = normalizeDelay(input.value, initialValue);
-    input.value = String(updated);
-    onUpdate(updated);
-  });
-
-  wrapper.appendChild(input);
-  return wrapper;
 }
 
 function setAutoTypespeedEnabled(enabled) {
@@ -53,63 +30,52 @@ function setAutoTypespeedEnabled(enabled) {
 }
 
 export function initTypespeedTool() {
-  const content = document.createElement("div");
-  content.style.display = "flex";
-  content.style.flexDirection = "column";
-  content.style.gap = "8px";
-
-  const label = document.createElement("label");
-  label.textContent = "Auto Typespeed:";
-  label.htmlFor = "th-auto-typespeed-toggle";
-  content.appendChild(label);
-
-  const toggle = document.createElement("label");
-  toggle.className = "th-switch";
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.id = "th-auto-typespeed-toggle";
-  toggle.appendChild(checkbox);
-
-  const slider = document.createElement("span");
-  slider.className = "th-switch-slider";
-  toggle.appendChild(slider);
-
-  content.appendChild(toggle);
-
-  const charDelayControl = createDelayInput(
-    "th-auto-typespeed-char-delay",
-    "charDelay",
-    charDelay,
-    (value) => {
-      charDelay = value;
-    },
-  );
-  const lineDelayControl = createDelayInput(
-    "th-auto-typespeed-line-delay",
-    "lineDelay",
-    lineDelay,
-    (value) => {
-      lineDelay = value;
-    },
-  );
-
-  content.appendChild(charDelayControl);
-  content.appendChild(lineDelayControl);
-
-  checkboxElement = checkbox;
   const initialEnabled =
     typeof window !== "undefined" && Boolean(window.__autoTypespeedEnabled);
-  checkbox.checked = initialEnabled;
-  checkbox.addEventListener("change", () => {
-    setAutoTypespeedEnabled(checkbox.checked);
+
+  const { checkbox, content } = registerToggleTool({
+    id: "th-auto-typespeed",
+    title: "Auto Typespeed:",
+    toggleId: "th-auto-typespeed-toggle",
+    initialChecked: initialEnabled,
+    onToggleChange: (checked) => {
+      setAutoTypespeedEnabled(checked);
+    },
   });
 
-  setAutoTypespeedEnabled(initialEnabled);
+  checkboxElement = checkbox;
 
-  if (typeof registerTool === "function") {
-    registerTool({ id: "th-auto-typespeed", content });
-  }
+  const charDelayControl = createInputControl({
+    id: "th-auto-typespeed-char-delay",
+    label: "charDelay",
+    type: "number",
+    min: 0,
+    step: 10,
+    value: charDelay,
+    onChange: (raw) => {
+      const updated = normalizeDelay(raw, charDelay);
+      charDelay = updated;
+      return updated;
+    },
+  });
+  const lineDelayControl = createInputControl({
+    id: "th-auto-typespeed-line-delay",
+    label: "lineDelay",
+    type: "number",
+    min: 0,
+    step: 10,
+    value: lineDelay,
+    onChange: (raw) => {
+      const updated = normalizeDelay(raw, lineDelay);
+      lineDelay = updated;
+      return updated;
+    },
+  });
+
+  content.appendChild(charDelayControl.wrapper);
+  content.appendChild(lineDelayControl.wrapper);
+
+  setAutoTypespeedEnabled(initialEnabled);
 }
 
 export async function autoTypespeed() {
