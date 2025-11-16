@@ -19,6 +19,8 @@ import {
   initAuto2048Tool,
 } from "./utils/auto/auto2048.js";
 import { initTypespeedTool } from "./utils/auto/autotypespeed.js";
+import { hook } from "./utils/hook.js";
+import { initUI } from "./utils/init.js";
 
 function loadFonts() {
   const link = document.createElement("link");
@@ -31,51 +33,33 @@ function loadFonts() {
 
 function testsend() {
   console.log("tests send");
-  const ws = window.socket;
+  const ws = window.n;
   ws.send("primes\n");
 }
 
-(function () {
-  const RealWS = window.WebSocket;
-
-  class HookedWebSocket extends RealWS {
-    constructor(url, protocols) {
-      super(url, protocols);
-
-      const captured =
-        window.__capturedSockets ?? (window.__capturedSockets = []);
-      captured.push(this);
-
-      if (!window.n) {
-        window.n = this;
-      }
-
-      if (!window.socket) {
-        window.socket = this;
-      }
-
-      console.log("[hook] captured", this.url);
-    }
+function changeicon(url) {
+  let link = document.querySelector("link[rel~='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
   }
-  window.WebSocket = HookedWebSocket;
+  link.href = url;
+}
 
+(function () {
+  hook();
   function waitReady() {
     loadFonts();
 
     if (window.i != undefined) {
       window.term = window.i;
-      initThemeTool();
-      initAuto2048Tool();
-      initTypespeedTool();
-      try {
-        const savedTheme = localStorage.getItem("th-selected-theme");
-        if (savedTheme && typeof savedTheme === "string") {
-          changeTheme(savedTheme);
-        } else {
-          changeTheme("Casual");
-        }
-      } catch (_) {
-        changeTheme("Casual");
+      initUI();
+      if (window.socket == undefined) {
+        alert(
+          "Unable to find WebSocket connection. Please hard reload that page.",
+        );
+        return;
       }
     } else {
       setTimeout(waitReady, 2500);
@@ -83,6 +67,15 @@ function testsend() {
   }
 
   waitReady();
+  let text = "TELESOVLS - Actual better telehack experience - ";
+  let marquee = text;
+
+  setInterval(() => {
+    marquee = marquee.slice(1) + marquee[0];
+    document.title = marquee;
+  }, 150);
+
+  changeicon("https://rule34.xxx/favicon.ico?v=2");
 
   window.getViewportContent = getViewportContent;
   window.getViewportLines = getViewportLines;
