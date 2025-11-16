@@ -32,7 +32,7 @@ export function getLastLines(n) {
   if (n <= 0) return [];
   const ypos = getCursorPosition().y;
   const start = Math.max(0, ypos - n + 1);
-  return lines.slice(start, ypos + 1);
+  return lines.slice(start, ypos + 1) || [];
 }
 
 /**
@@ -102,4 +102,15 @@ export function getCurrentLine() {
   const line = buffer.getLine(absoluteY);
 
   return line ? line.translateToString(true) : "";
+}
+
+export async function waitUntil(text, { timeoutMs = 5000, pollMs = 100 } = {}) {
+  const start = Date.now();
+  while (true) {
+    const content = getCurrentLine();
+    console.log("debug: waitUntil checking line:", content);
+    if (content.includes(text)) return true;
+    if (Date.now() - start > timeoutMs) return false;
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
 }

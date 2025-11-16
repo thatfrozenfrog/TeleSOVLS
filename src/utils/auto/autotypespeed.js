@@ -6,7 +6,7 @@ let checkboxElement = null;
 let loopActive = false;
 let charDelay = 30;
 let lineDelay = 50;
-
+let socket = window.socket;
 function normalizeDelay(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isFinite(parsed) && parsed >= 0) {
@@ -79,7 +79,6 @@ export function initTypespeedTool() {
 }
 
 export async function autoTypespeed() {
-  let socket = window.socket;
   if (loopActive) {
     return;
   }

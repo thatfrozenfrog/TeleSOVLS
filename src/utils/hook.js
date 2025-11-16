@@ -1,3 +1,5 @@
+import swal from "sweetalert";
+
 let themeAlertRegistered = false;
 let loadingOverlay = null;
 
@@ -21,6 +23,27 @@ function pickLoadingImage() {
   if (!loadingImageURL.length) return "";
   const idx = Math.floor(Math.random() * loadingImageURL.length);
   return loadingImageURL[idx];
+}
+
+const SWEETALERT_STYLE_ID = "th-swal-font-style";
+function ensureSweetAlertFont() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(SWEETALERT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = SWEETALERT_STYLE_ID;
+  style.textContent = `
+    .swal-modal,
+    .swal-title,
+    .swal-text,
+    .swal-button,
+    .swal-content__input,
+    .swal-content__textarea {
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+  `;
+  (document.head || document.documentElement || document.body)?.appendChild(
+    style,
+  );
 }
 
 function createLoadingOverlayElement() {
@@ -86,13 +109,16 @@ function themeAppliedListener() {
   try {
     window.addEventListener("th:theme-applied", () => {
       hideLoadingOverlay();
+      ensureSweetAlertFont();
       console.log("Theme has been applied.");
       if (window.socket == undefined) {
-        alert(
-          "Telehack WebSocket is missing. Please create a new tab to establish a new connection.",
+        swal(
+          "WebSocket missing!",
+          "Unable to find WebSocket connection. Please create a new tab to establish a new connection.",
+          "error",
         );
       } else {
-        alert("WebSocket connection found.");
+        swal("Hook applied!", "TeleSOVLS is ready to use.", "success");
       }
     });
   } catch (_) {}
@@ -108,6 +134,7 @@ export function hook() {
   const RealWS = window.WebSocket;
   themeApplyingListener();
   themeAppliedListener();
+  ensureSweetAlertFont();
   showLoadingOverlay();
 
   class HookedWebSocket extends RealWS {

@@ -9,6 +9,7 @@ export function initUI() {
   initAuto2048Tool();
   initTypespeedTool();
   initporthackui();
+  ensureSweetAlertFont();
   try {
     const savedTheme = localStorage.getItem("th-selected-theme");
     if (savedTheme && typeof savedTheme === "string") {
