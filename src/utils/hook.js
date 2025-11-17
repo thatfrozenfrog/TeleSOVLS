@@ -2,7 +2,7 @@ import swal from "sweetalert";
 
 let themeAlertRegistered = false;
 let loadingOverlay = null;
-
+let firstTime = true;
 const loadingImageURL = [
   "https://s6.imgcdn.dev/YKQgBo.gif",
   "https://s6.imgcdn.dev/YKQXNK.gif",
@@ -104,6 +104,8 @@ function hideLoadingOverlay() {
 }
 
 function themeAppliedListener() {
+  if (firstTime == false) return;
+  firstTime = false;
   if (themeAlertRegistered || typeof window === "undefined") return;
   themeAlertRegistered = true;
   try {

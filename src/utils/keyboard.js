@@ -66,6 +66,43 @@ export function sendkey(key, modifiers = {}) {
   socket.send(payload);
 }
 
+const keybindListeners = [];
+
+export function registerKeybind(combo, handler) {
+  if (
+    !Array.isArray(combo) ||
+    combo.length === 0 ||
+    typeof handler !== "function"
+  ) {
+    return () => {};
+  }
+  const normalizedSet = new Set(combo.map((key) => key.toLowerCase()));
+
+  const listener = (event) => {
+    if (event.type !== "keydown") return;
+    const pressed = new Set();
+    if (event.shiftKey) pressed.add("shift");
+    if (event.ctrlKey) pressed.add("control");
+    if (event.altKey) pressed.add("alt");
+    if (event.metaKey) pressed.add("meta");
+    if (event.key) pressed.add(event.key.toLowerCase());
+
+    if (normalizedSet.size !== pressed.size) return;
+    for (const key of normalizedSet) {
+      if (!pressed.has(key)) return;
+    }
+    handler(event);
+  };
+
+  keybindListeners.push(listener);
+  window.addEventListener("keydown", listener);
+  return () => {
+    const idx = keybindListeners.indexOf(listener);
+    if (idx >= 0) keybindListeners.splice(idx, 1);
+    window.removeEventListener("keydown", listener);
+  };
+}
+
 export async function type(text, delay = 50) {
   for (const ch of text) {
     socket.send(ch);

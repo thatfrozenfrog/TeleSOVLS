@@ -12,7 +12,7 @@ import {
 } from "./utils/terminal.js";
 import { solveBoard } from "./modules/2048.js";
 import { solveAutovon } from "./modules/autovon.js";
-import { sendkey, type } from "./utils/keyboard.js";
+import { sendkey, type, registerKeybind } from "./utils/keyboard.js";
 import {
   parseboard,
   autosolve,
