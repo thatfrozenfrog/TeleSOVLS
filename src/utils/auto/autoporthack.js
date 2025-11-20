@@ -1,10 +1,10 @@
 import * as terminal from "../terminal.js";
 import * as keyboard from "../keyboard.js";
-import { registerTool } from "../ui.js";
 import { registerToggleTool } from "../ui.js";
 
 let checkboxelem = null;
 let loopActive = false;
+
 function setAutoporthackenabled(enabled) {
   if (typeof window !== "undefined") {
     window.__autoporthackenabled = enabled;
@@ -18,55 +18,59 @@ function setAutoporthackenabled(enabled) {
     });
   }
 }
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function initporthackui() {
-  const { checkbox, content } = registerToggleTool({
-    title: "Auto Porthack:",
+  registerToggleTool({
     id: "th-auto-porthack",
+    title: "Auto Porthack",
+    description: "Automatically complete porthack.exe with selected versions.",
     toggleId: "th-auto-porthack-toggle",
     onToggleChange: (checked) => {
       setAutoporthackenabled(checked);
     },
-  });
-  checkboxelem = checkbox;
+    onReady: ({ checkbox, content }) => {
+      checkboxelem = checkbox;
 
-  const version = document.createElement("div");
-  version.className = "th-inline-radio";
-  const versions = [
-    { text: "V1", value: "v1", checked: true },
-    { text: "V2", value: "v2", checked: false },
-  ];
-  versions.forEach(({ text: labelText, value, checked }) => {
-    const wrapper = document.createElement("label");
-    wrapper.className = "th-choice";
+      const version = document.createElement("div");
+      version.className = "th-inline-radio";
+      const versions = [
+        { text: "V1", value: "v1", checked: true },
+        { text: "V2", value: "v2", checked: false },
+      ];
+      versions.forEach(({ text: labelText, value, checked }) => {
+        const wrapper = document.createElement("label");
+        wrapper.className = "th-choice";
 
-    const input = document.createElement("input");
-    input.type = "radio";
-    input.name = "th-auto-porthack-version";
-    input.value = value;
-    input.checked = checked;
-    input.addEventListener("change", () => {
-      if (input.checked) {
-        window.__autoporthackversion = value;
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "th-auto-porthack-version";
+        input.value = value;
+        input.checked = checked;
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            window.__autoporthackversion = value;
+          }
+        });
+
+        const text = document.createElement("span");
+        text.textContent = labelText;
+
+        wrapper.append(input, text);
+        version.append(wrapper);
+      });
+
+      if (!window.__autoporthackversion) {
+        window.__autoporthackversion = "v1";
       }
-    });
 
-    const text = document.createElement("span");
-    text.textContent = labelText;
-
-    wrapper.append(input, text);
-    version.append(wrapper);
+      content.appendChild(version);
+      setAutoporthackenabled(checkbox.checked);
+    },
   });
-
-  if (!window.__autoporthackversion) {
-    window.__autoporthackversion = "v1";
-  }
-
-  content.appendChild(version);
-  setAutoporthackenabled(checkbox.checked);
 }
 
 async function autoPorthack() {

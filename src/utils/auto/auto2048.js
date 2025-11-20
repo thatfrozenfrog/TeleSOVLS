@@ -2,19 +2,21 @@ import * as terminal from "../terminal.js";
 import * as keyboard from "../keyboard.js";
 import { solveBoard } from "../../modules/2048.js";
 import { registerToggleTool } from "../ui.js";
-
+import swal from "sweetalert";
 export function initAuto2048Tool() {
-  const { checkbox } = registerToggleTool({
+  registerToggleTool({
     id: "th-auto-2048",
-    title: "Auto 2048:",
+    title: "Auto 2048",
+    description: "Automatically solves 2048 game (Ctrl+C to stop)",
     toggleId: "th-auto-2048-toggle",
     initialChecked: __auto2048Running,
     onToggleChange: (checked) => {
       handleAuto2048Toggle(checked);
     },
+    onReady: ({ checkbox }) => {
+      setAuto2048Toggle(checkbox);
+    },
   });
-
-  setAuto2048Toggle(checkbox);
 }
 
 export function parseboard() {
@@ -61,7 +63,7 @@ function setAuto2048Running(running) {
 function ensureSocketReady() {
   const socket = window?.socket;
   if (!socket || socket.readyState !== 1) {
-    alert("Feature unavailable. WebSocket not captured.");
+    swal("Feature unavailable", "WebSocket not captured.", "error");
     return false;
   }
   return true;
@@ -153,7 +155,7 @@ export async function autosolve() {
     __auto2048Running = true;
   }
   try {
-    alert("Auto 2048 script started. Press Ctrl+C to stop.");
+    swal("Auto 2048 script started. Press Ctrl+C to stop.");
   } catch {}
   const detachHandler = attachCtrlCToStop();
   while (__auto2048Running) {
@@ -193,6 +195,6 @@ export async function autosolve() {
     detachHandler?.();
   } catch {}
   try {
-    alert("Auto 2048 script stopped.");
+    swal("Auto 2048 script stopped.");
   } catch {}
 }

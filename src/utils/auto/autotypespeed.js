@@ -2,11 +2,13 @@ import { registerToggleTool, createInputControl } from "../ui.js";
 import { getLastLines } from "../terminal.js";
 import { sendkey } from "../keyboard.js";
 import { type } from "../keyboard.js";
+
 let checkboxElement = null;
 let loopActive = false;
 let charDelay = 30;
 let lineDelay = 50;
 let socket = window.socket;
+
 function normalizeDelay(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isFinite(parsed) && parsed >= 0) {
@@ -33,17 +35,19 @@ export function initTypespeedTool() {
   const initialEnabled =
     typeof window !== "undefined" && Boolean(window.__autoTypespeedEnabled);
 
-  const { checkbox, content } = registerToggleTool({
+  const { content } = registerToggleTool({
     id: "th-auto-typespeed",
-    title: "Auto Typespeed:",
+    title: "Auto Typespeed",
+    description: "Automatically types commands for the typespeed game",
     toggleId: "th-auto-typespeed-toggle",
     initialChecked: initialEnabled,
     onToggleChange: (checked) => {
       setAutoTypespeedEnabled(checked);
     },
+    onReady: ({ checkbox }) => {
+      checkboxElement = checkbox;
+    },
   });
-
-  checkboxElement = checkbox;
 
   const charDelayControl = createInputControl({
     id: "th-auto-typespeed-char-delay",
