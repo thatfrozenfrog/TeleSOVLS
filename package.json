@@ -45,6 +45,7 @@
     "webpack-sources": "^3.3.3"
   },
   "dependencies": {
+    "@xterm/addon-serialize": "^0.13.0",
     "sweetalert": "^2.1.2"
   }
 }
