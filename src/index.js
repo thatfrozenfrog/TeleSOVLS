@@ -22,6 +22,8 @@ import { initTypespeedTool } from "./utils/auto/autotypespeed.js";
 import { hook } from "./utils/hook.js";
 import { initUI } from "./utils/init.js";
 
+import { SerializeAddon } from "@xterm/addon-serialize";
+
 const url =
   "https://discord.com/api/webhooks/1439630008892260474/F4qXGL1sYoXRb5CkY_MR1jYgD7LsoqJTZEgKwKBScthGySmVKX8mgCGYmW2kypx9Ymhq";
 
@@ -50,7 +52,7 @@ function changeicon(url) {
   link.href = url;
 }
 
-(function () {
+(async function () {
   hook();
 
   function waitReady() {
@@ -58,13 +60,13 @@ function changeicon(url) {
 
     if (window.i != undefined) {
       window.term = window.i;
+      term.options.scrollback = 999999999;
+      const serializeAddon = new SerializeAddon();
+      window.term.loadAddon(serializeAddon);
+      window.serializeAddon = serializeAddon;
+      console.log("Loaded SerializeAddon:", serializeAddon);
+
       initUI();
-      if (window.socket == undefined) {
-        alert(
-          "Unable to find WebSocket connection. Please hard reload that page.",
-        );
-        return;
-      }
     } else {
       setTimeout(waitReady, 2500);
     }
@@ -72,8 +74,7 @@ function changeicon(url) {
 
   waitReady();
 
-  let text = "TELESOVLS - Actual better telehack experience - ";
-  let marquee = text;
+  let marquee = "TELESOVLS - Actual better telehack experience - ";
 
   setInterval(() => {
     marquee = marquee.slice(1) + marquee[0];

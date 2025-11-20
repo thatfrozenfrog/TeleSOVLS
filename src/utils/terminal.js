@@ -104,12 +104,20 @@ export function getCurrentLine() {
   return line ? line.translateToString(true) : "";
 }
 
-export async function waitUntil(text, { timeoutMs = 5000, pollMs = 100 } = {}) {
+export async function waitUntil(
+  text,
+  { timeoutMs = 5000, pollMs = 100 } = {},
+  regex = false,
+) {
   const start = Date.now();
   while (true) {
     const content = getCurrentLine();
-    console.log("debug: waitUntil checking line:", content);
-    if (content.includes(text)) return true;
+    if (regex) {
+      const re = new RegExp(text);
+      if (re.test(content)) return true;
+    } else {
+      if (content.includes(text)) return true;
+    }
     if (Date.now() - start > timeoutMs) return false;
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
