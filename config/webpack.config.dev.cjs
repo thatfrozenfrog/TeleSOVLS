@@ -10,8 +10,10 @@ const webpackConfig = require("./webpack.config.base.cjs");
 
 const metadata = structuredClone(baseMetadata);
 
-// Initialize require array if it doesn't exist
-if (!metadata.require) {
+// Convert require to array if it's a string
+if (typeof metadata.require === "string") {
+  metadata.require = [metadata.require];
+} else if (!Array.isArray(metadata.require)) {
   metadata.require = [];
 }
 
