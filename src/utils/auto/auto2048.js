@@ -146,7 +146,7 @@ async function sendKeyAndWait(key, prevViewport) {
     console.warn("autosolve: socket not ready; skipping key", key);
     return null;
   }
-  keyboard.sendkey(key);
+  await keyboard.sendkey(key);
   return await waitForViewportChange(prevViewport);
 }
 

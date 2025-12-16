@@ -1,3 +1,4 @@
+import * as terminal from "./terminal.js";
 const SPECIAL_KEY_SEQUENCES = {
   Backspace: "\x7F",
   Enter: "\r",
@@ -53,7 +54,7 @@ function resolveKeyToPayload(key, modifiers = {}) {
   return key;
 }
 
-export function sendkey(key, modifiers = {}) {
+export async function sendkey(key, modifiers = {}) {
   const socket = window.socket;
   if (!socket || socket.readyState !== 1) {
     console.warn("sendkey: socket not ready", {
@@ -108,6 +109,47 @@ export async function type(text, delay = 50) {
     socket.send(ch);
     await sleep(delay);
   }
+}
+
+export async function th_exec(command, lag = 100) {
+  const socket = window.socket;
+  const buffer = window.term.buffer.active;
+  await socket.send(command);
+  await term.write("signature: " + command);
+  await sendkey("Enter");
+
+  await terminal.waitStill(1000, lag);
+  if (terminal.getCurrentLine().includes("More")) {
+    while (true) {
+      if (!terminal.getCurrentLine().includes("More")) {
+        break;
+      }
+      await socket.send(" ");
+      await terminal.waitStill(1000, 150);
+    }
+  }
+
+  // send Gq to quit pager
+  let top = buffer.baseY + window.term.rows - 1;
+  console.log("debug: top=", top);
+  let lines = [];
+  while (top >= 0) {
+    top -= 1;
+    const current = buffer.getLine(top);
+
+    const line = current.translateToString(true);
+    if (!line) {
+      continue;
+    }
+    if (line.includes("signature: " + command)) {
+      break;
+    }
+    lines.unshift(line);
+  }
+  for (const line of lines) {
+    console.log(line);
+  }
+  return lines;
 }
 
 function sleep(ms) {

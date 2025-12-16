@@ -91,13 +91,6 @@ function sleep(ms) {
 }
 
 async function sendCredentials() {
-  if (window.__autologinguest) {
-    console.log("[autologin] sending as guest");
-    window.socket.send("guest");
-    keyboard.sendkey("Enter");
-    return;
-  }
-
   if (!window.__autologinusername) {
     return;
   }
@@ -107,10 +100,10 @@ async function sendCredentials() {
     window.__autologinpassword ? "******" : "(no password)",
   );
   window.socket.send(window.__autologinusername);
-  keyboard.sendkey("Enter");
+  await keyboard.sendkey("Enter");
   if (window.__autologinpassword) {
     window.socket.send(window.__autologinpassword);
-    keyboard.sendkey("Enter");
+    await keyboard.sendkey("Enter");
   }
 }
 
@@ -142,14 +135,14 @@ async function autoLogin() {
         await terminal.waitUntil("ftp>");
       }
       if (
-        [/Login:/i, /Username:/i].some((prompt) =>
+        [/Login:/i, /Username:/i, /USERID/i].some((prompt) =>
           terminal.getCurrentLine().match(prompt),
         )
       ) {
         console.log("[autologin] Detected login prompt, sending credentials");
         if (window.__autologinguest) {
           window.socket.send("guest");
-          keyboard.sendkey("Enter");
+          await keyboard.sendkey("Enter");
         } else {
           await sendCredentials();
         }
@@ -159,11 +152,11 @@ async function autoLogin() {
         console.log(
           "[autologin] Detected 'Press any key to continue' prompt, sending key",
         );
-        keyboard.sendkey(" ");
+        await keyboard.sendkey(" ");
         await terminal.waitUntil("Username>");
         if (window.__autologinguest) {
           window.socket.send("guest");
-          keyboard.sendkey("Enter");
+          await keyboard.sendkey("Enter");
         } else {
           await sendCredentials();
         }

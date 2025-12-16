@@ -133,7 +133,7 @@ export async function autoTypespeed() {
       }
       await type(payload, charDelay);
       console.log(payload);
-      sendkey("Enter");
+      await keyboard.sendkey("Enter");
       await sleep(lineDelay);
     }
   } finally {

@@ -112,9 +112,11 @@ async function autoPorthack() {
             if (pa !== pb) return pa - pb;
             return Number(a) - Number(b);
           });
+          console.log("[autoporthack] starting to try ports");
+          await terminal.waitUntil("port to try?");
           for (const port of ports) {
             socket.send(port);
-            keyboard.sendkey("Enter");
+            await keyboard.sendkey("Enter");
             await sleep(700);
             while (
               terminal.getLastLines(3)[0].includes("...try another port") ==

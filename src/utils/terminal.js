@@ -104,6 +104,14 @@ export function getCurrentLine() {
   return line ? line.translateToString(true) : "";
 }
 
+/**
+ * Wait until specific text appears in the terminal
+ * @param {string} text - Text to wait for
+ * @param {{timeoutMs?: number, pollMs?: number}} options - Optional settings
+ * @param {boolean} regex - Whether to treat text as a regex
+ * @returns {Promise<boolean>} Resolves to true if text found, false if timeout
+ */
+
 export async function waitUntil(
   text,
   { timeoutMs = 5000, pollMs = 100 } = {},
@@ -120,5 +128,37 @@ export async function waitUntil(
     }
     if (Date.now() - start > timeoutMs) return false;
     await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}
+
+export async function waitStill(timeoutMs = 500, pollMs = 50) {
+  let lastContent = getViewportContent();
+  const start = Date.now();
+  let consecutiveStableChecks = 0;
+  const requiredStableChecks = 2; // Must be stable for 2 consecutive checks
+  let currentPollDelay = pollMs;
+
+  while (true) {
+    await new Promise((resolve) => setTimeout(resolve, currentPollDelay));
+    const currentContent = getViewportContent();
+
+    if (currentContent === lastContent) {
+      consecutiveStableChecks += 1;
+      // Require multiple stable checks before returning
+      if (consecutiveStableChecks >= requiredStableChecks) {
+        return;
+      }
+      // Content stable, slow down polling to save resources
+      currentPollDelay = Math.min(currentPollDelay * 1.5, 200);
+    } else {
+      // Content changed, reset stability counter and speed up polling
+      consecutiveStableChecks = 0;
+      currentPollDelay = Math.max(pollMs, 20); // Faster during active changes
+      lastContent = currentContent;
+    }
+
+    if (Date.now() - start > timeoutMs) {
+      return;
+    }
   }
 }

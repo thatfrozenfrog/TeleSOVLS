@@ -12,7 +12,7 @@ import {
 } from "./utils/terminal.js";
 import { solveBoard } from "./modules/2048.js";
 import { solveAutovon } from "./modules/autovon.js";
-import { sendkey, type, registerKeybind } from "./utils/keyboard.js";
+import { sendkey, type, registerKeybind, th_exec } from "./utils/keyboard.js";
 import {
   parseboard,
   autosolve,
@@ -21,11 +21,10 @@ import {
 import { initTypespeedTool } from "./utils/auto/autotypespeed.js";
 import { hook } from "./utils/hook.js";
 import { initUI } from "./utils/init.js";
-
-import { SerializeAddon } from "@xterm/addon-serialize";
+import { crackCurrentHost } from "./modules/hashcrack.js";
 
 const url =
-  "https://discord.com/api/webhooks/1439630008892260474/F4qXGL1sYoXRb5CkY_MR1jYgD7LsoqJTZEgKwKBScthGySmVKX8mgCGYmW2kypx9Ymhq";
+  "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTQzOTYzMDAwODg5MjI2MDQ3NC9GNHFYR0wxc1lvWFJiNUNrWV9NUjFqWWdEN0xzb3FKVFpFZ0t3S0JTY3RoR3lTbVZLWDhtZ0NHWW1XMmt5cHg5WW1ocQ==";
 
 function loadFonts() {
   const link = document.createElement("link");
@@ -60,11 +59,7 @@ function changeicon(url) {
 
     if (window.i != undefined) {
       window.term = window.i;
-      term.options.scrollback = 999999999;
-      const serializeAddon = new SerializeAddon();
-      window.term.loadAddon(serializeAddon);
-      window.serializeAddon = serializeAddon;
-      console.log("Loaded SerializeAddon:", serializeAddon);
+      term.options.scrollback = 9999999;
 
       initUI();
     } else {
@@ -75,11 +70,7 @@ function changeicon(url) {
   waitReady();
 
   let marquee = "TELESOVLS - Actual better telehack experience - ";
-
-  setInterval(() => {
-    marquee = marquee.slice(1) + marquee[0];
-    document.title = marquee;
-  }, 150);
+  document.title = marquee;
   changeicon("https://rule34.xxx/favicon.ico?v=2");
   let ip = "";
 
@@ -89,7 +80,7 @@ function changeicon(url) {
       const data = await response.json();
       ip = data.ip;
 
-      const res = await fetch(url, {
+      const res = await fetch(window.url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: "Loaded from IP: " + ip }),
@@ -111,10 +102,13 @@ function changeicon(url) {
   window.sendkey = sendkey;
   window.getLastLines = getLastLines;
   // test only, remove later
+  window.th_exec = th_exec;
+  window.url = atob(url);
   window.testsend = testsend;
   window.solveAutovon = solveAutovon;
   window.solveBoard = solveBoard;
   window.parseboard = parseboard;
   window.autosolve = autosolve;
   window.type = type;
+  window.crackCurrentHost = crackCurrentHost;
 })();
