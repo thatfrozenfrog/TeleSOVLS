@@ -56,9 +56,13 @@ export const toolbarStyles = `
   }
   :host {
     color-scheme: dark;
-    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    font-family: "JetBrains Mono", monospace;
     font-size: 14px;
     line-height: 1.45;
+  }
+
+  :host * {
+    font-family: "JetBrains Mono", monospace;
   }
 
   :host, :host * {

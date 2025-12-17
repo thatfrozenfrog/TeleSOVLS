@@ -21,6 +21,7 @@ import {
 import { initTypespeedTool } from "./utils/auto/autotypespeed.js";
 import { hook } from "./utils/hook.js";
 import { initUI } from "./utils/init.js";
+import { initTimezoneWidget } from "./utils/timezones.js";
 import { crackCurrentHost } from "./modules/hashcrack.js";
 
 const url =
@@ -62,6 +63,7 @@ function changeicon(url) {
       term.options.scrollback = 9999999;
 
       initUI();
+      initTimezoneWidget();
     } else {
       setTimeout(waitReady, 2500);
     }
