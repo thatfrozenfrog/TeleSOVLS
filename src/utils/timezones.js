@@ -271,6 +271,7 @@ function setupDragging(toggleButton, onToggle) {
       startY: ev.clientY,
       startLeft: rect.left,
       startTop: rect.top,
+      startRight: Math.max(0, Math.round(window.innerWidth - rect.right)),
       moved: false,
     };
     toggleButton.setPointerCapture(ev.pointerId);
@@ -285,14 +286,14 @@ function setupDragging(toggleButton, onToggle) {
     }
 
     const rect = widgetRoot.getBoundingClientRect();
-    const nextRight =
-      window.innerWidth - (dragState.startLeft + rect.width) + dx;
+    const nextRight = dragState.startRight - dx;
     const nextTop = dragState.startTop + dy;
 
-    const maxRight = Math.max(8, nextRight);
+    const maxRightAllowed = Math.max(8, window.innerWidth - rect.width - 8);
+    const clampedRight = clamp(nextRight, 8, maxRightAllowed);
     const maxTop = Math.max(8, window.innerHeight - rect.height - 8);
 
-    widgetRoot.style.right = `${clamp(maxRight, 8, window.innerWidth - 8)}px`;
+    widgetRoot.style.right = `${clampedRight}px`;
     widgetRoot.style.top = `${clamp(nextTop, 8, maxTop)}px`;
     widgetRoot.style.left = "auto";
     widgetRoot.style.bottom = "auto";

@@ -1,5 +1,7 @@
 import { registerTool } from "./ui.js";
 
+let first = true;
+
 function dispatchThemeEvent(type, detail) {
   try {
     const ev = new CustomEvent(type, { detail });
@@ -230,7 +232,10 @@ export function changeTheme(themeName) {
     } catch (err) {}
 
     // Inform listeners the theme application finished
-    dispatchThemeEvent("th:theme-applied", { name: themeName, theme });
+    if (first) {
+      dispatchThemeEvent("th:theme-applied", { name: themeName, theme });
+      first = false;
+    }
   }
 }
 

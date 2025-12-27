@@ -115,7 +115,7 @@ export async function th_exec(command, lag = 100) {
   const socket = window.socket;
   const buffer = window.term.buffer.active;
   await socket.send(command);
-  await term.write("signature: " + command);
+  await term.write("ᛉ");
   await sendkey("Enter");
 
   await terminal.waitStill(1000, lag);
@@ -141,7 +141,7 @@ export async function th_exec(command, lag = 100) {
     if (!line) {
       continue;
     }
-    if (line.includes("signature: " + command)) {
+    if (line.includes("ᛉ")) {
       break;
     }
     lines.unshift(line);
