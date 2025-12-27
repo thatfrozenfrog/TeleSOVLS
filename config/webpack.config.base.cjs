@@ -30,6 +30,10 @@ const webpackConfig = {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
       },
+      {
+        test: /\.txt$/,
+        type: "asset/source",
+      }
     ],
   },
   plugins: process.env.npm_config_report ? [new BundleAnalyzerPlugin()] : [],
