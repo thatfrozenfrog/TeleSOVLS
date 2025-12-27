@@ -135,7 +135,7 @@ async function autoLogin() {
         await terminal.waitUntil("ftp>");
       }
       if (
-        [/Login:/i, /Username:/i, /USERID/i].some((prompt) =>
+        [/Login:/i, /Username:/i].some((prompt) =>
           terminal.getCurrentLine().match(prompt),
         )
       ) {
