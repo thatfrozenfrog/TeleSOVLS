@@ -5,13 +5,16 @@ import { applyTheme } from "../utils/theme.js";
 import { initThemeTool } from "../utils/theme.js";
 import { initporthackui } from "./auto/autoporthack.js";
 import { initAutologinUI } from "./auto/autologin.js";
+import { initAutosatanUI } from "./auto/autosatan.js";
+import { initAutovonUI } from "./auto/autovon.js";
 export function initUI() {
   initThemeTool();
   initporthackui();
   initAuto2048Tool();
   initTypespeedTool();
   initAutologinUI();
-
+  initAutosatanUI();
+  initAutovonUI();
   try {
     const savedTheme = localStorage.getItem("th-selected-theme");
     if (savedTheme && typeof savedTheme === "string") {

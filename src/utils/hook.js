@@ -1,22 +1,21 @@
 import swal from "sweetalert";
 
 let themeAlertRegistered = false;
+let themeApplyingRegistered = false;
 let loadingOverlay = null;
 let firstTime = true;
 const loadingImageURL = [
-  "https://s6.imgcdn.dev/YKQgBo.gif",
-  "https://s6.imgcdn.dev/YKQXNK.gif",
-  "https://s6.imgcdn.dev/YKiYDN.gif",
-  "https://s6.imgcdn.dev/YKQEbO.gif",
-  "https://s6.imgcdn.dev/YKQJMn.gif",
-  "https://s6.imgcdn.dev/YKQolg.gif",
-  "https://s6.imgcdn.dev/YKihyq.gif",
-  "https://s6.imgcdn.dev/YKijAB.gif",
-  "https://s6.imgcdn.dev/YKiuew.gif",
-  "https://s6.imgcdn.dev/YKiwgu.gif",
-  "https://s6.imgcdn.dev/YKiMNL.gif",
-  "https://s6.imgcdn.dev/YKicGa.gif",
-  "https://s6.imgcdn.dev/YKiCMt.gif",
+  "https://files.catbox.moe/ifs41g.gif",
+  "https://files.catbox.moe/awhpwq.gif",
+  "https://files.catbox.moe/rqblwo.gif",
+  "https://files.catbox.moe/m7uyu8.webp",
+  "https://files.catbox.moe/wthouk.gif",
+  "https://files.catbox.moe/l8mynx.gif",
+  "https://files.catbox.moe/leg2f6.gif",
+  "https://files.catbox.moe/cvea7z.gif",
+  "https://files.catbox.moe/5tiwc8.gif",
+  "https://files.catbox.moe/f97uwq.gif",
+  "https://files.catbox.moe/omufgh.gif",
 ];
 
 function pickLoadingImage() {
@@ -127,9 +126,13 @@ function themeAppliedListener() {
 }
 
 function themeApplyingListener() {
-  window.addEventListener("th:theme-applying", () => {
-    console.log("Theme is being applied...");
-  });
+  if (themeApplyingRegistered || typeof window === "undefined") return;
+  themeApplyingRegistered = true;
+  try {
+    window.addEventListener("th:theme-applying", () => {
+      console.log("Theme is being applied...");
+    });
+  } catch (_) {}
 }
 
 export function hook() {
